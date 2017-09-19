@@ -39,9 +39,9 @@ public class FileManager {
     }
 
     public Optional<InputStream> stream(String path) {
-        FTPClient client = new FTPClient();
+        FTPClient client = null;
         try {
-            connect(client);
+            client = connect();
             return stream(client, path);
         } finally {
             disconnect(client);
@@ -64,9 +64,9 @@ public class FileManager {
     }
 
     public Boolean dirExists(String dirPath) {
-        FTPClient client = new FTPClient();
+        FTPClient client = null;
         try {
-            connect(client);
+            client = connect();
             return dirExists(client, dirPath);
         } finally {
             disconnect(client);
@@ -94,9 +94,9 @@ public class FileManager {
     }
 
     public List<FileInfo> list(String path) {
-        FTPClient client = new FTPClient();
+        FTPClient client = null;
         try {
-            connect(client);
+            client = connect();
             return list(client, path);
         } finally {
             disconnect(client);
@@ -131,9 +131,9 @@ public class FileManager {
     }
 
     public Optional<OutputStream> download(String path, OutputStream stream) {
-        FTPClient client = new FTPClient();
+        FTPClient client = null;
         try {
-            connect(client);
+            client = connect();
             return download(client, path, stream);
         } finally {
             disconnect(client);
@@ -147,9 +147,9 @@ public class FileManager {
 
     public Map<String, Boolean> downloadAll(Map<String, OutputStream> targets) {
         Map<String, Boolean> results = new HashMap<>();
-        FTPClient client = new FTPClient();
+        FTPClient client = null;
         try {
-            connect(client);
+            client = connect();
             return downloadAll(client, targets);
         } finally {
             disconnect(client);
@@ -171,9 +171,9 @@ public class FileManager {
     }
 
     public Optional<String> upload(String path, InputStream is) {
-        FTPClient client = new FTPClient();
+        FTPClient client = null;
         try {
-            connect(client);
+            client = connect();
             return upload(client, path, is);
         } finally {
             disconnect(client);
@@ -217,7 +217,11 @@ public class FileManager {
         return Optional.of(client.getReplyString());
     }
 
-    private void disconnect(FTPClient client) {
+    public void disconnect(FTPClient client) {
+        if(client == null) {
+            return;
+        }
+
         try {
             client.logout();
         } catch (IOException ex) {
@@ -232,14 +236,16 @@ public class FileManager {
         }
     }
 
-    private void connect(FTPClient client) {
+    public FTPClient connect() {
         try {
+            FTPClient client = new FTPClient();
             client.connect(host, port);
             client.login(username, password);
             if (!FTPReply.isPositiveCompletion(client.getReplyCode())) {
                 client.disconnect();
                 throw new FileManagerException("FTP server refused connection.");
             }
+            return client;
         } catch (IOException ex) {
             throw new FileManagerException(ex);
         }
