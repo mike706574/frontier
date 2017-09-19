@@ -14,21 +14,21 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class FileRetriever {
-    private static final Logger log = LoggerFactory.getLogger(FileRetriever.class);
+public class FileManager {
+    private static final Logger log = LoggerFactory.getLogger(FileManager.class);
 
     private final String host;
     private final Integer port;
     private final String username;
     private final String password;
 
-    public FileRetriever(String host,
+    public FileManager(String host,
                          String username,
                          String password) {
         this(host, 21, username, password);
     }
 
-    public FileRetriever(String host,
+    public FileManager(String host,
                          Integer port,
                          String username,
                          String password) {
@@ -42,18 +42,46 @@ public class FileRetriever {
         FTPClient client = new FTPClient();
         try {
             connect(client);
+            return stream(client, path);
+        } finally {
+            disconnect(client);
+        }
+    }
+
+    public Optional<InputStream> stream(FTPClient client, String path) {
+        try {
             InputStream is = client.retrieveFileStream(path);
             if (is == null) {
                 if (client.getReplyCode() == 550) {
                     return Optional.empty();
                 }
-                throw new FileRetrieverException(client.getReplyString());
+                throw new FileManagerException(client.getReplyString());
             }
             return Optional.of(is);
         } catch (IOException ex) {
-            throw new FileRetrieverException(ex);
+            throw new FileManagerException(ex);
+        }
+    }
+
+    public Boolean dirExists(String dirPath) {
+        FTPClient client = new FTPClient();
+        try {
+            connect(client);
+            return dirExists(client, dirPath);
         } finally {
             disconnect(client);
+        }
+    }
+
+    public Boolean dirExists(FTPClient client, String dirPath) {
+        try {
+            client.changeWorkingDirectory(dirPath);
+            if (client.getReplyCode() == 550) {
+                return false;
+            }
+            return true;
+        } catch (IOException ex) {
+            throw new FileManagerException(ex);
         }
     }
 
@@ -61,25 +89,35 @@ public class FileRetriever {
         return IO.slurp(stream(path).orElseThrow(() -> new FileNotFoundException(path)));
     }
 
+    public String slurp(FTPClient client, String path) {
+        return IO.slurp(stream(client, path).orElseThrow(() -> new FileNotFoundException(path)));
+    }
+
     public List<FileInfo> list(String path) {
         FTPClient client = new FTPClient();
         try {
             connect(client);
+            return list(client, path);
+        } finally {
+            disconnect(client);
+        }
+    }
+
+    public List<FileInfo> list(FTPClient client, String path) {
+        try {
             List<FileInfo> files = Arrays.stream(client.listFiles(path))
-                    .map(file -> {
+                .map(file -> {
                         Calendar timestamp = file.getTimestamp();
                         LocalDateTime time = LocalDateTime.ofInstant(timestamp.toInstant(),
-                                ZoneId.systemDefault());
+                                                                     ZoneId.systemDefault());
                         return new FileInfo(file.getName(),
-                                file.getSize(),
+                                            file.getSize(),
                                 time);
                     })
                     .collect(Collectors.toList());
             return files;
         } catch (IOException ex) {
-            throw new FileRetrieverException(ex);
-        } finally {
-            disconnect(client);
+            throw new FileManagerException(ex);
         }
     }
 
@@ -88,7 +126,7 @@ public class FileRetriever {
             return download(path, os).isPresent();
 
         } catch (IOException ex) {
-            throw new FileRetrieverException(ex);
+            throw new FileManagerException(ex);
         }
     }
 
@@ -96,11 +134,15 @@ public class FileRetriever {
         FTPClient client = new FTPClient();
         try {
             connect(client);
-            return retrieveFile(client, path, stream)
-                    .map(replyString -> stream);
+            return download(client, path, stream);
         } finally {
             disconnect(client);
         }
+    }
+
+    public Optional<OutputStream> download(FTPClient client, String path, OutputStream stream) {
+        return retrieveFile(client, path, stream)
+                    .map(replyString -> stream);
     }
 
     public Map<String, Boolean> downloadAll(Map<String, OutputStream> targets) {
@@ -108,17 +150,51 @@ public class FileRetriever {
         FTPClient client = new FTPClient();
         try {
             connect(client);
-            for (Map.Entry<String, OutputStream> target : targets.entrySet()) {
-                String path = target.getKey();
-                OutputStream stream = target.getValue();
-                Boolean successful = retrieveFile(client, path, stream)
-                        .map(replyString -> true)
-                        .orElse(false);
-                results.put(path, successful);
-            }
-            return results;
+            return downloadAll(client, targets);
         } finally {
             disconnect(client);
+        }
+    }
+
+    public Map<String, Boolean> downloadAll(FTPClient client, Map<String, OutputStream> targets) {
+        Map<String, Boolean> results = new HashMap<>();
+
+        for (Map.Entry<String, OutputStream> target : targets.entrySet()) {
+            String path = target.getKey();
+            OutputStream stream = target.getValue();
+            Boolean successful = retrieveFile(client, path, stream)
+                .map(replyString -> true)
+                .orElse(false);
+            results.put(path, successful);
+        }
+        return results;
+    }
+
+    public Optional<String> upload(String path, InputStream is) {
+        FTPClient client = new FTPClient();
+        try {
+            connect(client);
+            return upload(client, path, is);
+        } finally {
+            disconnect(client);
+        }
+    }
+
+    public Optional<String> upload(FTPClient client, String path, InputStream is) {
+        try {
+            boolean successful = client.storeFile(path, is);
+            if(successful) {
+                return Optional.of(path);
+            }
+
+            if (client.getReplyCode() == 550) {
+                return Optional.empty();
+            }
+
+            throw new FileManagerException(client.getReplyString());
+        }
+        catch(IOException ex) {
+            throw new FileManagerException(ex);
         }
     }
 
@@ -129,14 +205,14 @@ public class FileRetriever {
         try {
             successful = client.retrieveFile(path, stream);
         } catch (IOException ex) {
-            throw new FileRetrieverException(ex);
+            throw new FileManagerException(ex);
         }
         if (!successful) {
             if (client.getReplyCode() == 550) {
                 return Optional.empty();
             }
 
-            throw new FileRetrieverException(client.getReplyString());
+            throw new FileManagerException(client.getReplyString());
         }
         return Optional.of(client.getReplyString());
     }
@@ -151,7 +227,7 @@ public class FileRetriever {
             try {
                 client.disconnect();
             } catch (IOException ex) {
-                throw new FileRetrieverException(ex);
+                throw new FileManagerException(ex);
             }
         }
     }
@@ -160,15 +236,12 @@ public class FileRetriever {
         try {
             client.connect(host, port);
             client.login(username, password);
-            System.out.println("Connected to " + host + ".");
-            System.out.print(client.getReplyString());
-
             if (!FTPReply.isPositiveCompletion(client.getReplyCode())) {
                 client.disconnect();
-                throw new FileRetrieverException("FTP server refused connection.");
+                throw new FileManagerException("FTP server refused connection.");
             }
         } catch (IOException ex) {
-            throw new FileRetrieverException(ex);
+            throw new FileManagerException(ex);
         }
     }
 }

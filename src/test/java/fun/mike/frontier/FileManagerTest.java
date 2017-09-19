@@ -19,13 +19,13 @@ import java.util.Optional;
 
 import static org.junit.Assert.*;
 
-public class FileRetrieverTest {
+public class FileManagerTest {
     private static final String USER = "bob";
     private static final String PASSWORD = "password";
     @Rule
     public ExpectedException thrown = ExpectedException.none();
     private FakeFtpServer fakeFtpServer;
-    private FileRetriever retriever;
+    private FileManager retriever;
 
     @Before
     public void setUp() {
@@ -41,7 +41,7 @@ public class FileRetrieverTest {
 
         fakeFtpServer.start();
 
-        retriever = new FileRetriever("localhost",
+        retriever = new FileManager("localhost",
                 fakeFtpServer.getServerControlPort(),
                 USER,
                 PASSWORD);
@@ -93,13 +93,18 @@ public class FileRetrieverTest {
         assertEquals(Optional.empty(), retriever.download("foo", os));
     }
 
+    @Test
+    public void dirExists() {
+        assertTrue(retriever.dirExists("test"));
+        assertFalse(retriever.dirExists("fake"));
+    }
 
     @Test
     public void downloadFailure() {
-        thrown.expect(FileRetrieverException.class);
+        thrown.expect(FileManagerException.class);
 
         OutputStream os = new ByteArrayOutputStream();
-        new FileRetriever("eakw", "foo", "bar")
+        new FileManager("eakw", "foo", "bar")
                 .download("foo", os);
     }
 
