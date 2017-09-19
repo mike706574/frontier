@@ -1,5 +1,14 @@
 package fun.mike.frontier;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -11,13 +20,6 @@ import org.mockftpserver.fake.filesystem.DirectoryEntry;
 import org.mockftpserver.fake.filesystem.FileEntry;
 import org.mockftpserver.fake.filesystem.FileSystem;
 import org.mockftpserver.fake.filesystem.WindowsFakeFileSystem;
-
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.Assert.*;
 
 public class FileManagerTest {
     private static final String USER = "bob";

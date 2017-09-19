@@ -1,18 +1,23 @@
 package fun.mike.frontier;
 
-import org.apache.commons.net.ftp.FTPClient;
-import org.apache.commons.net.ftp.FTPReply;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPReply;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FileManager {
     private static final Logger log = LoggerFactory.getLogger(FileManager.class);
@@ -23,15 +28,15 @@ public class FileManager {
     private final String password;
 
     public FileManager(String host,
-                         String username,
-                         String password) {
+                       String username,
+                       String password) {
         this(host, 21, username, password);
     }
 
     public FileManager(String host,
-                         Integer port,
-                         String username,
-                         String password) {
+                       Integer port,
+                       String username,
+                       String password) {
         this.host = host;
         this.port = port;
         this.username = username;
@@ -106,12 +111,12 @@ public class FileManager {
     public List<FileInfo> list(FTPClient client, String path) {
         try {
             List<FileInfo> files = Arrays.stream(client.listFiles(path))
-                .map(file -> {
+                    .map(file -> {
                         Calendar timestamp = file.getTimestamp();
                         LocalDateTime time = LocalDateTime.ofInstant(timestamp.toInstant(),
-                                                                     ZoneId.systemDefault());
+                                ZoneId.systemDefault());
                         return new FileInfo(file.getName(),
-                                            file.getSize(),
+                                file.getSize(),
                                 time);
                     })
                     .collect(Collectors.toList());
@@ -142,7 +147,7 @@ public class FileManager {
 
     public Optional<OutputStream> download(FTPClient client, String path, OutputStream stream) {
         return retrieveFile(client, path, stream)
-                    .map(replyString -> stream);
+                .map(replyString -> stream);
     }
 
     public Map<String, Boolean> downloadAll(Map<String, OutputStream> targets) {
@@ -163,8 +168,8 @@ public class FileManager {
             String path = target.getKey();
             OutputStream stream = target.getValue();
             Boolean successful = retrieveFile(client, path, stream)
-                .map(replyString -> true)
-                .orElse(false);
+                    .map(replyString -> true)
+                    .orElse(false);
             results.put(path, successful);
         }
         return results;
@@ -183,7 +188,7 @@ public class FileManager {
     public Optional<String> upload(FTPClient client, String path, InputStream is) {
         try {
             boolean successful = client.storeFile(path, is);
-            if(successful) {
+            if (successful) {
                 return Optional.of(path);
             }
 
@@ -192,8 +197,7 @@ public class FileManager {
             }
 
             throw new FileManagerException(client.getReplyString());
-        }
-        catch(IOException ex) {
+        } catch (IOException ex) {
             throw new FileManagerException(ex);
         }
     }
@@ -218,7 +222,7 @@ public class FileManager {
     }
 
     public void disconnect(FTPClient client) {
-        if(client == null) {
+        if (client == null) {
             return;
         }
 

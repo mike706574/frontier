@@ -4,18 +4,18 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.channels.FileChannel;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,13 +27,12 @@ public class IO {
     }
 
     public static void copy(String srcPath, String destPath) {
-	try (FileInputStream is = new FileInputStream(srcPath);
+        try (FileInputStream is = new FileInputStream(srcPath);
              FileChannel ic = is.getChannel();
              FileOutputStream os = new FileOutputStream(destPath);
              FileChannel oc = os.getChannel()) {
             oc.transferFrom(ic, 0, ic.size());
-        }
-        catch (IOException ex) {
+        } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
     }
@@ -69,7 +68,7 @@ public class IO {
 
     public static void nuke(String path) {
         File file = new File(path);
-        if(file.isDirectory()) {
+        if (file.isDirectory()) {
             for (String filePath : file.list()) {
                 new File(file.getPath(), filePath).delete();
             }
