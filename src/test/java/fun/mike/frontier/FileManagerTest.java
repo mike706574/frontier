@@ -4,8 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,7 +26,7 @@ public class FileManagerTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
     private FakeFtpServer fakeFtpServer;
-    private FileManager retriever;
+    private FileManager manager;
 
     @Before
     public void setUp() {
@@ -43,7 +42,7 @@ public class FileManagerTest {
 
         fakeFtpServer.start();
 
-        retriever = new FileManager("localhost",
+        manager = new FileManager("localhost",
                 fakeFtpServer.getServerControlPort(),
                 USER,
                 PASSWORD);
@@ -57,18 +56,17 @@ public class FileManagerTest {
     @Test
     public void stream() {
         OutputStream os = new ByteArrayOutputStream();
-        assertEquals("foo.",
-                IO.slurp(retriever.stream("test\\foo.txt").get()));
+        assertEquals("foo.", IO.slurp(manager.stream("test/foo.txt").get()));
     }
 
     @Test
     public void streamFailure() {
-        assertFalse(retriever.stream("elkawrjwa").isPresent());
+        assertFalse(manager.stream("elkawrjwa").isPresent());
     }
 
     @Test
     public void list() throws Exception {
-        List<FileInfo> files = retriever.list("test");
+        List<FileInfo> files = manager.list("test");
 
         assertEquals(2, files.size());
 
@@ -84,7 +82,7 @@ public class FileManagerTest {
     @Test
     public void download() {
         OutputStream out = new ByteArrayOutputStream();
-        retriever.download("test\\foo.txt",
+        manager.download("test/foo.txt",
                 out);
         assertEquals("foo.", out.toString());
     }
@@ -92,33 +90,42 @@ public class FileManagerTest {
     @Test
     public void downloadNonexistentFile() {
         OutputStream os = new ByteArrayOutputStream();
-        assertEquals(Optional.empty(), retriever.download("foo", os));
+        assertEquals(Optional.empty(), manager.download("foo", os));
     }
 
     @Test
     public void dirExists() {
-        assertTrue(retriever.dirExists("test"));
-        assertFalse(retriever.dirExists("fake"));
+        assertTrue(manager.dirExists("test"));
+        assertFalse(manager.dirExists("fake"));
     }
 
     @Test
     public void downloadFailure() {
         thrown.expect(FileManagerException.class);
-
         OutputStream os = new ByteArrayOutputStream();
-        new FileManager("eakw", "foo", "bar")
-                .download("foo", os);
+        new FileManager("eakw", "foo", "bar").download("foo", os);
     }
 
     @Test
     public void downloadToFile() {
-        String localPath = "local/foo.txt";
+        final String FTP_PATH = "test/foo.txt";
+        final String LOCAL_PATH = "local/foo.txt";
         try {
             OutputStream out = new ByteArrayOutputStream();
-            assertTrue(retriever.download("test\\foo.txt", localPath));
-            assertEquals("foo.", IO.slurp(localPath));
+            assertTrue(manager.download(FTP_PATH, LOCAL_PATH));
+            assertEquals("foo.", IO.slurp(LOCAL_PATH));
         } finally {
-            IO.deleteQuietly(localPath);
+            IO.deleteQuietly(LOCAL_PATH);
         }
+    }
+
+    @Test
+    public void upload() {
+        final String PATH = "test/baz.txt";
+        final String CONTENT = "baz.";
+
+        InputStream in = new ByteArrayInputStream(CONTENT.getBytes());
+        assertEquals(Optional.of(PATH), manager.upload(PATH, in));
+        assertEquals(CONTENT, manager.slurp(PATH));
     }
 }
