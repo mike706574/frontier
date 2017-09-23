@@ -128,4 +128,11 @@ public class FileManagerTest {
         assertEquals(Optional.of(PATH), manager.upload(PATH, in));
         assertEquals(CONTENT, manager.slurp(PATH));
     }
+
+    @Test
+    public void uploadFailure() {
+        thrown.expect(FileManagerException.class);
+        InputStream in = new ByteArrayInputStream("lekajwel".getBytes());
+        manager.upload("blaoewa/elaker.txt", in);
+    }
 }
