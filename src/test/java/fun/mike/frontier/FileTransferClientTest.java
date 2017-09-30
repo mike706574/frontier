@@ -4,7 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,13 +23,15 @@ import org.mockftpserver.fake.filesystem.FileEntry;
 import org.mockftpserver.fake.filesystem.FileSystem;
 import org.mockftpserver.fake.filesystem.WindowsFakeFileSystem;
 
-public class FileManagerTest {
+public class FileTransferClientTest {
     private static final String USER = "bob";
     private static final String PASSWORD = "password";
+
     @Rule
     public ExpectedException thrown = ExpectedException.none();
     private FakeFtpServer fakeFtpServer;
-    private FileManager manager;
+    private FileTransferClient manager;
+    private int port;
 
     @Before
     public void setUp() {
@@ -42,8 +47,9 @@ public class FileManagerTest {
 
         fakeFtpServer.start();
 
-        manager = new FileManager("localhost",
-                fakeFtpServer.getServerControlPort(),
+        port = fakeFtpServer.getServerControlPort();
+        manager = new FileTransferClient("localhost",
+                port,
                 USER,
                 PASSWORD);
     }
@@ -80,6 +86,13 @@ public class FileManagerTest {
     }
 
     @Test
+    public void listDirDoesNotExist() throws Exception {
+        thrown.expect(FileTransferException.class);
+        thrown.expectMessage(String.format("Directory localhost:%d:kelawjrlka does not exist.", port));
+        manager.list("kelawjrlka");
+    }
+
+    @Test
     public void download() {
         OutputStream out = new ByteArrayOutputStream();
         manager.download("test/foo.txt",
@@ -101,9 +114,9 @@ public class FileManagerTest {
 
     @Test
     public void downloadFailure() {
-        thrown.expect(FileManagerException.class);
+        thrown.expect(FileTransferException.class);
         OutputStream os = new ByteArrayOutputStream();
-        new FileManager("eakw", "foo", "bar").download("foo", os);
+        new FileTransferClient("eakw", "foo", "bar").download("foo", os);
     }
 
     @Test
@@ -131,7 +144,7 @@ public class FileManagerTest {
 
     @Test
     public void uploadFailure() {
-        thrown.expect(FileManagerException.class);
+        thrown.expect(FileTransferException.class);
         InputStream in = new ByteArrayInputStream("lekajwel".getBytes());
         manager.upload("blaoewa/elaker.txt", in);
     }

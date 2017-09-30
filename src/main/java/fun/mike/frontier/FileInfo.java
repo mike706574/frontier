@@ -2,14 +2,18 @@ package fun.mike.frontier;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class FileInfo {
     private final String name;
     private final Long size;
     private final LocalDateTime time;
 
-    public FileInfo(String name,
-                    Long size,
-                    LocalDateTime time) {
+    @JsonCreator
+    public FileInfo(@JsonProperty("name") String name,
+                    @JsonProperty("name") Long size,
+                    @JsonProperty("name") LocalDateTime time) {
         this.name = name;
         this.time = time;
         this.size = size;
