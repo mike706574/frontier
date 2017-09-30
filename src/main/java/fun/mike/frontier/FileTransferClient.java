@@ -296,6 +296,8 @@ public class FileTransferClient {
      * @return An Optional containing the OutputStream if the file exists; otherwise, an empty Optional.
      */
     public Optional<OutputStream> download(FTPClient client, String path, OutputStream stream) {
+        log.debug(String.format("Downloading file %s to stream.", path));
+
         return retrieveFile(client, path, stream)
                 .map(replyString -> stream);
     }
@@ -396,13 +398,14 @@ public class FileTransferClient {
             successful = client.retrieveFile(path, stream);
 
             if (!successful) {
-                log.debug("Retrieving file %s.", locationLabel);
                 if (client.getReplyCode() == 550) {
+                    log.debug(String.format("File %s not found.", locationLabel));
                     return Optional.empty();
                 }
 
                 throw new FileTransferException(client.getReplyString());
             }
+            log.debug(String.format("Found file %s.", locationLabel));
             return Optional.of(client.getReplyString());
         } catch (IOException ex) {
             throw new FileTransferException(ex);
