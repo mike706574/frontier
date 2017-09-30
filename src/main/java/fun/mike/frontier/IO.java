@@ -87,30 +87,4 @@ public class IO {
             throw new UncheckedIOException(ex);
         }
     }
-
-    // Everything in memory
-    public static List<List<String>> slurpHeadlessDelimited(String path,
-                                                            String delimiter) {
-
-        try (Stream<String> lines = Files.lines(Paths.get(path))) {
-            return lines
-                    .map(line -> Arrays.asList(line.split(delimiter)))
-                    .collect(Collectors.toList());
-        } catch (IOException ex) {
-            throw new UncheckedIOException(ex);
-        }
-    }
-
-    public static void spitHeadlessDelimited(String path,
-                                             String delimiter,
-                                             List<List<String>> rows) {
-        try (Writer out = new PrintWriter(path)) {
-            String content = rows.stream()
-                    .map(row -> String.join("|", row))
-                    .collect(Collectors.joining("\n"));
-            out.write(content);
-        } catch (IOException ex) {
-            throw new UncheckedIOException(ex);
-        }
-    }
 }
