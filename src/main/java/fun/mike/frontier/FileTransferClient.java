@@ -65,14 +65,24 @@ public class FileTransferClient {
      * @param path the path to a file on the host.
      * @return an Optional containing an InputStream to the file at path if it exists; otherwise, an empty Optional.
      */
-    public Optional<InputStream> stream(String path) {
+    public Optional<InputStream> optionalStream(String path) throws FileTransferException {
         FTPClient client = null;
         try {
             client = connect();
-            return stream(client, path);
+            return optionalStream(client, path);
         } finally {
             disconnect(client);
         }
+    }
+
+    /**
+     * Streams a file over FTP.
+     *
+     * @param path the path to a file on the host.
+     * @return an InputStream to the file at path
+     */
+    public InputStream stream(String path) throws FileTransferException, FileNotFoundException {
+        return optionalStream(path).orElseThrow(() -> fileNotFound(path));
     }
 
     /**
@@ -82,7 +92,7 @@ public class FileTransferClient {
      * @param path   the path to a file on the host.
      * @return an Optional containing an InputStream to the file at path if it exists; otherwise, an empty Optional.
      */
-    public Optional<InputStream> stream(FTPClient client, String path) {
+    public Optional<InputStream> optionalStream(FTPClient client, String path) throws FileTransferException {
         String locationLabel = getLocationLabel(path);
         try {
             log.debug(String.format("Streaming file %s.",
@@ -108,12 +118,23 @@ public class FileTransferClient {
     }
 
     /**
+     * Streams a file over FTP using the given client.
+     *
+     * @param client an FTPClient instance.
+     * @param path   the path to a file on the host.
+     * @return an InputStream to the file at path
+     */
+    public InputStream stream(FTPClient client, String path) throws FileTransferException, FileNotFoundException {
+        return optionalStream(client, path).orElseThrow(() -> fileNotFound(path));
+    }
+
+    /**
      * Checks if a file exists on the host.
      *
      * @param path a path to the file on the host.
      * @return true if the directory at path exists; otherwise, false.
      */
-    public Boolean dirExists(String path) {
+    public Boolean dirExists(String path) throws FileTransferException {
         FTPClient client = null;
         try {
             client = connect();
@@ -130,7 +151,7 @@ public class FileTransferClient {
      * @param path   a path to the file on the host.
      * @return true if the directory at path exists; otherwise, false.
      */
-    public Boolean dirExists(FTPClient client, String path) {
+    public Boolean dirExists(FTPClient client, String path) throws FileTransferException {
         String locationLabel = getLocationLabel(path);
         try {
             log.debug(String.format("Checking if directory %s exists.",
@@ -179,10 +200,41 @@ public class FileTransferClient {
      * Reads the contents of a file on the host to a string.
      *
      * @param path a path to a file on the host.
+     * @return an Optional containing the contents of the file if it exists; otherwise, an empty Optional.
+     */
+    public Optional<String> optionalSlurp(String path) throws FileTransferException, FileNotFoundException {
+        Optional<InputStream> is = optionalStream(path);
+        if (is.isPresent()) {
+            return Optional.of(IO.slurp(is.get()));
+
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Reads the contents of a file on the host to a string.
+     *
+     * @param path a path to a file on the host.
      * @return the contents of the file at path as a string.
      */
-    public String slurp(String path) {
-        return IO.slurp(stream(path).orElseThrow(() -> new FileNotFoundException(path)));
+    public String slurp(String path) throws FileTransferException, FileNotFoundException {
+        return optionalSlurp(path).orElseThrow(() -> fileNotFound(path));
+    }
+
+    /**
+     * Reads the contents of a file on the host to a string using the given client.
+     *
+     * @param client an FTPClient instance.
+     * @param path   a path to a file on the host.
+     * @return an Optional containing the contents of the file at path as a string; otherwise an empty Optional.
+     */
+    public Optional<String> optionalSlurp(FTPClient client, String path) throws FileTransferException, FileNotFoundException {
+        Optional<InputStream> is = optionalStream(path);
+        if (is.isPresent()) {
+            return Optional.of(IO.slurp(is.get()));
+
+        }
+        return Optional.empty();
     }
 
     /**
@@ -192,8 +244,8 @@ public class FileTransferClient {
      * @param path   a path to a file on the host.
      * @return the contents of the file at path as a string.
      */
-    public String slurp(FTPClient client, String path) {
-        return IO.slurp(stream(client, path).orElseThrow(() -> new FileNotFoundException(path)));
+    public String slurp(FTPClient client, String path) throws FileTransferException, FileNotFoundException {
+        return optionalSlurp(client, path).orElseThrow(() -> fileNotFound(path));
     }
 
     /**
@@ -202,7 +254,7 @@ public class FileTransferClient {
      * @param path a path to a directory on the host.
      * @return a list of files.
      */
-    public List<FileInfo> list(String path) {
+    public List<FileInfo> list(String path) throws FileTransferException {
         FTPClient client = null;
         try {
             client = connect();
@@ -219,7 +271,7 @@ public class FileTransferClient {
      * @param path   a path to a directory on the host.
      * @return a list of files.
      */
-    public List<FileInfo> list(FTPClient client, String path) {
+    public List<FileInfo> list(FTPClient client, String path) throws FileTransferException {
         String locationLabel = getLocationLabel(path);
         try {
             log.debug(String.format("Listing files in %s.",
@@ -255,13 +307,13 @@ public class FileTransferClient {
      * @param localPath a path on the local machine.
      * @return true if the file exists and was downloaded; otherwise, false.
      */
-    public Boolean download(String path, String localPath) {
+    public Boolean optionalDownload(String path, String localPath) throws FileTransferException {
         String locationLabel = getLocationLabel(path);
         log.debug(String.format("Downloading file %s locally to %s.",
                 path,
                 localPath));
         try (OutputStream os = new FileOutputStream(localPath)) {
-            return download(path, os).isPresent();
+            return optionalDownload(path, os).isPresent();
         } catch (IOException ex) {
             String message = String.format("I/O error downloading %s.",
                     path);
@@ -277,14 +329,25 @@ public class FileTransferClient {
      * @param stream An OutputStream to write to.
      * @return An Optional containing the OutputStream if the file exists; otherwise, an empty Optional.
      */
-    public Optional<OutputStream> download(String path, OutputStream stream) {
+    public Optional<OutputStream> optionalDownload(String path, OutputStream stream) throws FileTransferException {
         FTPClient client = null;
         try {
             client = connect();
-            return download(client, path, stream);
+            return optionalDownload(client, path, stream);
         } finally {
             disconnect(client);
         }
+    }
+
+    /**
+     * Writes the contents of a file on the host to an output stream.
+     *
+     * @param path   a path to a file on the host.
+     * @param stream An OutputStream to write to.
+     * @return An Optional containing the OutputStream if the file exists; otherwise, an empty Optional.
+     */
+    public OutputStream download(String path, OutputStream stream) throws FileTransferException, FileNotFoundException {
+        return optionalDownload(path, stream).orElseThrow(() -> fileNotFound(path));
     }
 
     /**
@@ -295,11 +358,23 @@ public class FileTransferClient {
      * @param stream An OutputStream to write to.
      * @return An Optional containing the OutputStream if the file exists; otherwise, an empty Optional.
      */
-    public Optional<OutputStream> download(FTPClient client, String path, OutputStream stream) {
+    public Optional<OutputStream> optionalDownload(FTPClient client, String path, OutputStream stream) throws FileTransferException {
         log.debug(String.format("Downloading file %s to stream.", path));
 
         return retrieveFile(client, path, stream)
                 .map(replyString -> stream);
+    }
+
+    /**
+     * Writes the contents of a file on the host to an output stream using the given client.
+     *
+     * @param client an FTPClient instance.
+     * @param path   a path to a file on the host.
+     * @param stream An OutputStream to write to.
+     * @return the OutputStream
+     */
+    public OutputStream download(FTPClient client, String path, OutputStream stream) throws FileTransferException, FileNotFoundException {
+        return optionalDownload(client, path, stream).orElseThrow(() -> fileNotFound(path));
     }
 
     /**
@@ -309,7 +384,7 @@ public class FileTransferClient {
      * @return An Map of paths to a Boolean indicating if the respective file was found and written to their respective
      * OutputStream.
      */
-    public Map<String, Boolean> downloadAll(Map<String, OutputStream> targets) {
+    public Map<String, Boolean> downloadAll(Map<String, OutputStream> targets) throws FileTransferException {
         FTPClient client = null;
         try {
             client = connect();
@@ -327,7 +402,7 @@ public class FileTransferClient {
      * @return An Map of paths to a Boolean indicating if the respective file was found and written to their respective
      * OutputStream.
      */
-    public Map<String, Boolean> downloadAll(FTPClient client, Map<String, OutputStream> targets) {
+    public Map<String, Boolean> downloadAll(FTPClient client, Map<String, OutputStream> targets) throws FileTransferException {
         Map<String, Boolean> results = new HashMap<>();
 
         for (Map.Entry<String, OutputStream> target : targets.entrySet()) {
@@ -344,41 +419,19 @@ public class FileTransferClient {
     /**
      * Uploads the contents from an input stream to a path on the host.
      *
-     * @param path a path to write to on the host
-     * @param is   an InputStream containing the content to be written.
-     * @return an Optional containing the path written to if the directory of the path exists; otherwise, an empty
-     * Optional.
-     */
-    public Optional<String> upload(String path, InputStream is) {
-        FTPClient client = null;
-        try {
-            client = connect();
-            return upload(client, path, is);
-        } finally {
-            disconnect(client);
-        }
-    }
-
-    /**
-     * Uploads the contents from an input stream to a path on the host.
-     *
      * @param client an FTPClient instance.
      * @param path   a path to write to on the host
      * @param is     an InputStream containing the content to be written.
-     * @return an Optional containing the path written to if the directory of the path exists; otherwise, an empty
-     * Optional.
+     * @return the path written to
      */
-    public Optional<String> upload(FTPClient client, String path, InputStream is) {
+    public String upload(FTPClient client, String path, InputStream is) throws FileTransferException {
         try {
             boolean successful = client.storeFile(path, is);
             if (successful) {
-                return Optional.of(path);
+                return path;
             }
 
-            if (client.getReplyCode() == 550) {
-                return Optional.empty();
-            }
-
+            // TODO: Handle specific FTP codes
             String message = String.format("Unexpected reply: %s.",
                     client.getReplyString());
             log.warn(message);
@@ -388,9 +441,26 @@ public class FileTransferClient {
         }
     }
 
+    /**
+     * Uploads the contents from an input stream to a path on the host.
+     *
+     * @param path a path to write to on the host
+     * @param is   an InputStream containing the content to be written.
+     * @return the path written to
+     */
+    public String upload(String path, InputStream is) throws FileTransferException {
+        FTPClient client = null;
+        try {
+            client = connect();
+            return upload(client, path, is);
+        } finally {
+            disconnect(client);
+        }
+    }
+
     private Optional<String> retrieveFile(FTPClient client,
                                           String path,
-                                          OutputStream stream) {
+                                          OutputStream stream) throws FileTransferException {
         String locationLabel = getLocationLabel(path);
         log.debug(String.format("Retrieving file %s.", locationLabel));
         boolean successful;
@@ -417,7 +487,7 @@ public class FileTransferClient {
      *
      * @param client An FTPClient instance.
      */
-    public void disconnect(FTPClient client) {
+    public void disconnect(FTPClient client) throws FileTransferException {
         if (client == null) {
             return;
         }
@@ -452,7 +522,7 @@ public class FileTransferClient {
      *
      * @return An FTPClient instance.
      */
-    public FTPClient connect() {
+    public FTPClient connect() throws FileTransferException {
         String hostLabel = getHostLabel();
         try {
             log.debug(String.format("Connecting to %s as %s.", hostLabel, username));
@@ -483,5 +553,17 @@ public class FileTransferClient {
             return host;
         }
         return String.format("%s:%d", host, port);
+    }
+
+    private FileTransferException pathDoesNotExist(String path) {
+        String locationLabel = getLocationLabel(path);
+        String message = String.format("Path to %s does not exist.", path);
+        return new FileTransferException(path);
+    }
+
+    private FileNotFoundException fileNotFound(String path) {
+        String locationLabel = getLocationLabel(path);
+        String message = String.format("File %s not found.", path);
+        return new FileNotFoundException(message);
     }
 }

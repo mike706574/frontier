@@ -7,19 +7,19 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.io.UncheckedIOException;
-import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Collection;
+import java.util.Map;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class IO {
     public static void mkdir(String path) {
@@ -78,6 +78,52 @@ public class IO {
 
     public static void deleteQuietly(String path) {
         new File(path).delete();
+    }
+
+    public static void zip(String zipPath, Collection<String> paths) {
+        try (FileOutputStream fos = new FileOutputStream(zipPath);
+             ZipOutputStream zos = new ZipOutputStream(fos)) {
+            for (String path : paths) {
+                zos.putNextEntry(new ZipEntry(new File(path).getName()));
+
+                byte[] bytes = Files.readAllBytes(Paths.get(path));
+                zos.write(bytes, 0, bytes.length);
+                zos.closeEntry();
+            }
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+    }
+
+    public static void zip(String zipPath, Map<String, InputStream> entries) {
+        try (FileOutputStream fos = new FileOutputStream(zipPath);
+             ZipOutputStream zos = new ZipOutputStream(fos)) {
+            for (Map.Entry<String, InputStream> entry : entries.entrySet()) {
+                String path = (String) entry.getKey();
+                try (InputStream is = entry.getValue()) {
+                    zos.putNextEntry(new ZipEntry(new File(path).getName()));
+                    pipe(is, zos);
+                    zos.closeEntry();
+                }
+            }
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+    }
+
+    public static long pipe(InputStream input, OutputStream output) {
+        try {
+            byte[] buffer = new byte[1024];
+            long count = 0;
+            int n = 0;
+            while ((n = input.read(buffer)) != -1) {
+                output.write(buffer, 0, n);
+                count += n;
+            }
+            return count;
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
 
     public static Stream<String> streamLines(String path) {

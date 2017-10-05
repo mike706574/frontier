@@ -30,7 +30,7 @@ public class FileTransferClientTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
     private FakeFtpServer fakeFtpServer;
-    private FileTransferClient manager;
+    private FileTransferClient client;
     private int port;
 
     @Before
@@ -48,7 +48,7 @@ public class FileTransferClientTest {
         fakeFtpServer.start();
 
         port = fakeFtpServer.getServerControlPort();
-        manager = new FileTransferClient("localhost",
+        client = new FileTransferClient("localhost",
                 port,
                 USER,
                 PASSWORD);
@@ -60,19 +60,34 @@ public class FileTransferClientTest {
     }
 
     @Test
-    public void stream() {
+    public void stream() throws FileTransferException,
+            FileNotFoundException {
         OutputStream os = new ByteArrayOutputStream();
-        assertEquals("foo.", IO.slurp(manager.stream("test/foo.txt").get()));
+        assertEquals("foo.", IO.slurp(client.stream("test/foo.txt")));
     }
 
     @Test
-    public void streamFailure() {
-        assertFalse(manager.stream("elkawrjwa").isPresent());
+    public void optionalStream() throws FileTransferException {
+        OutputStream os = new ByteArrayOutputStream();
+        assertEquals("foo.", IO.slurp(client.optionalStream("test/foo.txt").get()));
+    }
+
+    @Test
+    public void optionalStreamNotFound() throws FileTransferException {
+        assertFalse(client.optionalStream("elkawrjwa").isPresent());
+    }
+
+    @Test
+    public void streamNotFound() throws FileTransferException,
+            FileNotFoundException {
+        thrown.expect(FileNotFoundException.class);
+        thrown.expectMessage("File elkawrjwa not found.");
+        client.stream("elkawrjwa");
     }
 
     @Test
     public void list() throws Exception {
-        List<FileInfo> files = manager.list("test");
+        List<FileInfo> files = client.list("test");
 
         assertEquals(2, files.size());
 
@@ -89,43 +104,52 @@ public class FileTransferClientTest {
     public void listDirDoesNotExist() throws Exception {
         thrown.expect(FileTransferException.class);
         thrown.expectMessage(String.format("Directory localhost:%d:kelawjrlka does not exist.", port));
-        manager.list("kelawjrlka");
+        client.list("kelawjrlka");
     }
 
     @Test
-    public void download() {
+    public void download() throws FileTransferException {
         OutputStream out = new ByteArrayOutputStream();
-        manager.download("test/foo.txt",
+        client.optionalDownload("test/foo.txt",
                 out);
         assertEquals("foo.", out.toString());
     }
 
     @Test
-    public void downloadNonexistentFile() {
+    public void downloadOptionalNonexistentFile() throws FileTransferException {
         OutputStream os = new ByteArrayOutputStream();
-        assertEquals(Optional.empty(), manager.download("foo", os));
+        assertEquals(Optional.empty(), client.optionalDownload("foo", os));
     }
 
     @Test
-    public void dirExists() {
-        assertTrue(manager.dirExists("test"));
-        assertFalse(manager.dirExists("fake"));
+    public void downloadNonexistentFile() throws FileTransferException,
+            FileNotFoundException {
+        thrown.expect(FileNotFoundException.class);
+        thrown.expectMessage("foo");
+        OutputStream os = new ByteArrayOutputStream();
+        client.download("foo", os);
     }
 
     @Test
-    public void downloadFailure() {
+    public void dirExists() throws FileTransferException {
+        assertTrue(client.dirExists("test"));
+        assertFalse(client.dirExists("fake"));
+    }
+
+    @Test
+    public void downloadFailure() throws FileTransferException {
         thrown.expect(FileTransferException.class);
         OutputStream os = new ByteArrayOutputStream();
-        new FileTransferClient("eakw", "foo", "bar").download("foo", os);
+        new FileTransferClient("eakw", "foo", "bar").optionalDownload("foo", os);
     }
 
     @Test
-    public void downloadToFile() {
+    public void downloadToFile() throws FileTransferException {
         final String FTP_PATH = "test/foo.txt";
         final String LOCAL_PATH = "local/foo.txt";
         try {
             OutputStream out = new ByteArrayOutputStream();
-            assertTrue(manager.download(FTP_PATH, LOCAL_PATH));
+            assertTrue(client.optionalDownload(FTP_PATH, LOCAL_PATH));
             assertEquals("foo.", IO.slurp(LOCAL_PATH));
         } finally {
             IO.deleteQuietly(LOCAL_PATH);
@@ -133,19 +157,20 @@ public class FileTransferClientTest {
     }
 
     @Test
-    public void upload() {
+    public void upload() throws FileTransferException, FileNotFoundException {
         final String PATH = "test/baz.txt";
         final String CONTENT = "baz.";
 
         InputStream in = new ByteArrayInputStream(CONTENT.getBytes());
-        assertEquals(Optional.of(PATH), manager.upload(PATH, in));
-        assertEquals(CONTENT, manager.slurp(PATH));
+        assertEquals(PATH, client.upload(PATH, in));
+        assertEquals(CONTENT, client.slurp(PATH));
     }
 
     @Test
-    public void uploadFailure() {
+    public void uploadPathNotFound() throws FileTransferException {
         thrown.expect(FileTransferException.class);
+        thrown.expectMessage("Unexpected reply: 553 [c:\\home\\blaoewa] is not a directory or does not exist.");
         InputStream in = new ByteArrayInputStream("lekajwel".getBytes());
-        manager.upload("blaoewa/elaker.txt", in);
+        client.upload("blaoewa/elaker.txt", in);
     }
 }
