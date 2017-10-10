@@ -162,8 +162,26 @@ public class FileTransferClientTest {
         final String CONTENT = "baz.";
 
         InputStream in = new ByteArrayInputStream(CONTENT.getBytes());
-        assertEquals(PATH, client.upload(PATH, in));
+        assertEquals(PATH, client.upload(in, PATH));
         assertEquals(CONTENT, client.slurp(PATH));
+    }
+
+    @Test
+    public void uploadLocalFile() throws FileTransferException, FileNotFoundException {
+
+        final String PATH = "test/baz.txt";
+        final String LOCAL_PATH = "local/baz.txt";
+        final String CONTENT = "baz.";
+
+        try {
+            IO.spit(LOCAL_PATH, CONTENT);
+            InputStream in = new ByteArrayInputStream(CONTENT.getBytes());
+            assertEquals(PATH, client.upload(in, PATH));
+            assertEquals(CONTENT, client.slurp(PATH));
+        }
+        finally {
+            IO.deleteQuietly(LOCAL_PATH);
+        }
     }
 
     @Test
@@ -171,6 +189,6 @@ public class FileTransferClientTest {
         thrown.expect(FileTransferException.class);
         thrown.expectMessage("Unexpected reply: 553 [c:\\home\\blaoewa] is not a directory or does not exist.");
         InputStream in = new ByteArrayInputStream("lekajwel".getBytes());
-        client.upload("blaoewa/elaker.txt", in);
+        client.upload(in, "blaoewa/elaker.txt");
     }
 }

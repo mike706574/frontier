@@ -1,5 +1,6 @@
 package fun.mike.frontier;
 
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -417,6 +418,43 @@ public class FileTransferClient {
     }
 
     /**
+     * Uploads the contents of the file at path to the given path on the host.
+     *
+     * @param dest   a path to write to on the host
+     * @param source a path of a file
+     * @return the path written to
+     */
+    public String upload(String source, String dest) throws FileTransferException {
+        FTPClient client = null;
+        try {
+            client = connect();
+            return upload(client, dest, source);
+        } finally {
+            disconnect(client);
+        }
+    }
+
+    /**
+     * Uploads the contents of the file at path to the given path on the host.
+     *
+     * @param client an FTPClient instance.
+     * @param dest   a path to write to on the host
+     * @param source a path of a file
+     * @return the path written to
+     */
+    public String upload(FTPClient client, String source, String dest) throws FileTransferException {
+        String locationLabel = getLocationLabel(dest);
+        log.debug(String.format("Uploading local file %s to %s.", source, locationLabel));
+
+        try(InputStream is = new FileInputStream(source)) {
+            return upload(client, is, dest);
+        }
+        catch(IOException ex) {
+            throw new FileTransferException(ex);
+        }
+    }
+
+    /**
      * Uploads the contents from an input stream to a path on the host.
      *
      * @param client an FTPClient instance.
@@ -424,11 +462,13 @@ public class FileTransferClient {
      * @param is     an InputStream containing the content to be written.
      * @return the path written to
      */
-    public String upload(FTPClient client, String path, InputStream is) throws FileTransferException {
+    public String upload(FTPClient client, InputStream source, String dest) throws FileTransferException {
         try {
-            boolean successful = client.storeFile(path, is);
+            String locationLabel = getLocationLabel(dest);
+            log.debug(String.format("Uploading content to %s.", locationLabel));
+            boolean successful = client.storeFile(dest, source);
             if (successful) {
-                return path;
+                return dest;
             }
 
             // TODO: Handle specific FTP codes
@@ -448,11 +488,11 @@ public class FileTransferClient {
      * @param is   an InputStream containing the content to be written.
      * @return the path written to
      */
-    public String upload(String path, InputStream is) throws FileTransferException {
+    public String upload(InputStream is, String path) throws FileTransferException {
         FTPClient client = null;
         try {
             client = connect();
-            return upload(client, path, is);
+            return upload(client, is, path);
         } finally {
             disconnect(client);
         }
