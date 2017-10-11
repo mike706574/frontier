@@ -341,6 +341,21 @@ public class FileTransferClient {
     }
 
     /**
+     * Writes the contents of a file on the host to a local file.
+     *
+     * @param path     a path to a file on the host.
+     * @param destPath a local path to a file to be written to.
+     */
+    public void download(String path, String destPath) throws FileTransferException, FileNotFoundException {
+        try(OutputStream stream = new FileOutputStream(destPath)) {
+            download(path, stream);
+        }
+        catch(IOException ex) {
+            throw new FileNotFoundException(ex);
+        }
+    }
+
+    /**
      * Writes the contents of a file on the host to an output stream.
      *
      * @param path   a path to a file on the host.

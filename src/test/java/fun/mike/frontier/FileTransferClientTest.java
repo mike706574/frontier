@@ -29,25 +29,25 @@ public class FileTransferClientTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-    private FakeFtpServer fakeFtpServer;
+    private FakeFtpServer ftpServer;
     private FileTransferClient client;
     private int port;
 
     @Before
     public void setUp() {
-        fakeFtpServer = new FakeFtpServer();
-        fakeFtpServer.setServerControlPort(0);
-        fakeFtpServer.addUserAccount(new UserAccount(USER, PASSWORD, "c:\\home"));
+        ftpServer = new FakeFtpServer();
+        ftpServer.setServerControlPort(0);
+        ftpServer.addUserAccount(new UserAccount(USER, PASSWORD, "c:\\home"));
 
         FileSystem fileSystem = new WindowsFakeFileSystem();
         fileSystem.add(new DirectoryEntry("c:\\home"));
         fileSystem.add(new FileEntry("c:\\home\\test\\foo.txt", "foo."));
         fileSystem.add(new FileEntry("c:\\home\\test\\bar.txt", "bar!!"));
-        fakeFtpServer.setFileSystem(fileSystem);
+        ftpServer.setFileSystem(fileSystem);
 
-        fakeFtpServer.start();
+        ftpServer.start();
 
-        port = fakeFtpServer.getServerControlPort();
+        port = ftpServer.getServerControlPort();
         client = new FileTransferClient("localhost",
                 port,
                 USER,
@@ -56,7 +56,7 @@ public class FileTransferClientTest {
 
     @After
     public void tearDown() {
-        fakeFtpServer.stop();
+        ftpServer.stop();
     }
 
     @Test
@@ -154,6 +154,30 @@ public class FileTransferClientTest {
         } finally {
             IO.deleteQuietly(LOCAL_PATH);
         }
+    }
+
+    @Test
+    public void downloadToPath() throws FileTransferException,
+                                        FileNotFoundException {
+        final String FTP_PATH = "test/foo.txt";
+        final String LOCAL_PATH = "local/foo.txt";
+        try {
+            client.download(FTP_PATH, LOCAL_PATH);
+            assertEquals("foo.", IO.slurp(LOCAL_PATH));
+        } finally {
+            IO.deleteQuietly(LOCAL_PATH);
+        }
+    }
+
+    @Test
+    public void downloadToPathFileNotFoundOnHost() throws FileTransferException,
+                                                          FileNotFoundException {
+        thrown.expect(FileNotFoundException.class);
+        thrown.expectMessage("File test/ekajrka.txt not found.");
+
+        final String FTP_PATH = "test/ekajrka.txt";
+        final String LOCAL_PATH = "local/foo.txt";
+        client.download(FTP_PATH, LOCAL_PATH);
     }
 
     @Test
