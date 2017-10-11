@@ -24,6 +24,8 @@ import org.mockftpserver.fake.filesystem.FileSystem;
 import org.mockftpserver.fake.filesystem.WindowsFakeFileSystem;
 
 public class FileTransferClientTest {
+    final String LOCAL_FILE = "local/foo.txt";
+
     private static final String USER = "bob";
     private static final String PASSWORD = "password";
 
@@ -56,6 +58,7 @@ public class FileTransferClientTest {
 
     @After
     public void tearDown() {
+        IO.deleteQuietly(LOCAL_FILE);
         ftpServer.stop();
     }
 
@@ -146,27 +149,19 @@ public class FileTransferClientTest {
     @Test
     public void downloadToFile() throws FileTransferException {
         final String FTP_PATH = "test/foo.txt";
-        final String LOCAL_PATH = "local/foo.txt";
-        try {
-            OutputStream out = new ByteArrayOutputStream();
-            assertTrue(client.optionalDownload(FTP_PATH, LOCAL_PATH));
-            assertEquals("foo.", IO.slurp(LOCAL_PATH));
-        } finally {
-            IO.deleteQuietly(LOCAL_PATH);
-        }
+
+        OutputStream out = new ByteArrayOutputStream();
+        assertTrue(client.optionalDownload(FTP_PATH, LOCAL_FILE));
+        assertEquals("foo.", IO.slurp(LOCAL_FILE));
     }
 
     @Test
     public void downloadToPath() throws FileTransferException,
                                         FileNotFoundException {
         final String FTP_PATH = "test/foo.txt";
-        final String LOCAL_PATH = "local/foo.txt";
-        try {
-            client.download(FTP_PATH, LOCAL_PATH);
-            assertEquals("foo.", IO.slurp(LOCAL_PATH));
-        } finally {
-            IO.deleteQuietly(LOCAL_PATH);
-        }
+
+        client.download(FTP_PATH, LOCAL_FILE);
+        assertEquals("foo.", IO.slurp(LOCAL_FILE));
     }
 
     @Test
@@ -176,8 +171,8 @@ public class FileTransferClientTest {
         thrown.expectMessage("File test/ekajrka.txt not found.");
 
         final String FTP_PATH = "test/ekajrka.txt";
-        final String LOCAL_PATH = "local/foo.txt";
-        client.download(FTP_PATH, LOCAL_PATH);
+        final String LOCAL_FILE = "local/foo.txt";
+        client.download(FTP_PATH, LOCAL_FILE);
     }
 
     @Test
@@ -194,18 +189,12 @@ public class FileTransferClientTest {
     public void uploadLocalFile() throws FileTransferException, FileNotFoundException {
 
         final String PATH = "test/baz.txt";
-        final String LOCAL_PATH = "local/baz.txt";
         final String CONTENT = "baz.";
 
-        try {
-            IO.spit(LOCAL_PATH, CONTENT);
-            InputStream in = new ByteArrayInputStream(CONTENT.getBytes());
-            assertEquals(PATH, client.upload(in, PATH));
-            assertEquals(CONTENT, client.slurp(PATH));
-        }
-        finally {
-            IO.deleteQuietly(LOCAL_PATH);
-        }
+        IO.spit(LOCAL_FILE, CONTENT);
+        InputStream in = new ByteArrayInputStream(CONTENT.getBytes());
+        assertEquals(PATH, client.upload(in, PATH));
+        assertEquals(CONTENT, client.slurp(PATH));
     }
 
     @Test
