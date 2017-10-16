@@ -41,8 +41,8 @@
   </distributionManagement>
 
   <scm>
-    <connection>scm:git:git://github.com/mike706574/frontier.git</connection>
-    <developerConnection>scm:git:ssh://github.com:mike706574/frontier.git</developerConnection>
+    <connection>scm:git:https://github.com/mike706574/frontier.git</connection>
+    <developerConnection>scm:git:https://github.com/mike706574/frontier.git</developerConnection>
     <url>http://github.com/mike706574/frontier/tree/master</url>
     <tag>frontier-alpha-0.0.1</tag>
   </scm>
