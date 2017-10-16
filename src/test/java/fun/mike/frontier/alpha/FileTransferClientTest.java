@@ -1,4 +1,4 @@
-package fun.mike.frontier;
+package fun.mike.frontier.alpha;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

@@ -1,4 +1,4 @@
-package fun.mike.frontier;
+package fun.mike.frontier.alpha;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -344,14 +344,19 @@ public class FileTransferClient {
      * Writes the contents of a file on the host to a local file.
      *
      * @param path     a path to a file on the host.
-     * @param destPath a local path to a file to be written to.
+     * @param localPath a local path to a file to be written to.
      */
-    public void download(String path, String destPath) throws FileTransferException, FileNotFoundException {
-        try(OutputStream stream = new FileOutputStream(destPath)) {
+    public void download(String path, String localPath) throws FileTransferException, FileNotFoundException {
+        String locationLabel = getLocationLabel(path);
+        try(OutputStream stream = new FileOutputStream(localPath)) {
             download(path, stream);
         }
         catch(IOException ex) {
-            throw new FileNotFoundException(ex);
+            String message = String.format("Failed to stream local file %s when trying to download %s.",
+                                           localPath,
+                                           locationLabel);
+            log.warn(message);
+            throw new FileTransferException(ex);
         }
     }
 
@@ -473,8 +478,8 @@ public class FileTransferClient {
      * Uploads the contents from an input stream to a path on the host.
      *
      * @param client an FTPClient instance.
-     * @param path   a path to write to on the host
-     * @param is     an InputStream containing the content to be written.
+     * @param source an InputStream containing the content to be written.
+     * @param dest   a path to write to on the host
      * @return the path written to
      */
     public String upload(FTPClient client, InputStream source, String dest) throws FileTransferException {

@@ -1,4 +1,4 @@
-package fun.mike.frontier;
+package fun.mike.frontier.alpha;
 
 import java.time.LocalDateTime;
 

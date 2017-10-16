@@ -1,9 +1,9 @@
-package fun.mike.frontier;
+package fun.mike.frontier.alpha;
 
 /**
  * Signals that a file necessary for the completion of an operation was not found.
  */
-public class FileNotFoundException extends Exception {
+public class FileNotFoundException extends RuntimeException {
     public FileNotFoundException(String msg) {
         super(msg);
     }

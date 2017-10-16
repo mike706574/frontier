@@ -1,4 +1,4 @@
-package fun.mike.frontier;
+package fun.mike.frontier.alpha;
 
 import java.io.BufferedReader;
 import java.io.File;
