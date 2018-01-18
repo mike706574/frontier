@@ -16,7 +16,7 @@ import static org.junit.Assert.fail;
 
 
 public class SftpFileTransferClientTest {
-    private final String LOCAL_FILE = "src/test/resources/local/foo.txt";
+    private final String LOCAL_FILE = "local/foo.txt";
     private final SftpFileTransferClient sftpClient = new SftpFileTransferClient("localhost",
                                                                             8080,
                                                                             "foo",
@@ -46,14 +46,14 @@ public class SftpFileTransferClientTest {
         String content = "this is a test";
         sftpServer.putFile("/bar",content,UTF_8);
 
-        sftpClient.download("/bar","src/test/resources/local");
+        sftpClient.download("/bar","local");
         
         try{
-           IO.slurp("src/test/resources/local/bar");
+           IO.slurp("local/bar");
         }catch(UncheckedIOException e){
             fail("SftpFileTransferClient's download method failed");
         }
-        IO.nuke("src/test/resources/local/bar");
+        IO.nuke("local/bar");
     }
     
 }
