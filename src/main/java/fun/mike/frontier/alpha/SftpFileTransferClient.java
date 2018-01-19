@@ -35,7 +35,7 @@ public class SftpFileTransferClient implements FileTransferClient {
 
     public SftpFileTransferClient(String host, String username, String password) {
         this.host = host;
-        this.port = 8765;
+        this.port = 22;
         this.username = username;
         this.password = password;
     }
