@@ -1,9 +1,5 @@
 package fun.mike.frontier.alpha;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -23,20 +19,22 @@ import org.mockftpserver.fake.filesystem.FileEntry;
 import org.mockftpserver.fake.filesystem.FileSystem;
 import org.mockftpserver.fake.filesystem.WindowsFakeFileSystem;
 
-public class FileTransferClientTest {
-    final String LOCAL_FILE = "local/foo.txt";
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
+public class FtpFileTransferClientTest {
     private static final String USER = "bob";
     private static final String PASSWORD = "password";
-
+    final String LOCAL_FILE = "local/foo.txt";
     @Rule
     public ExpectedException thrown = ExpectedException.none();
     private FakeFtpServer ftpServer;
-    private FileTransferClient client;
+    private FtpFileTransferClient client;
     private int port;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         ftpServer = new FakeFtpServer();
         ftpServer.setServerControlPort(0);
         ftpServer.addUserAccount(new UserAccount(USER, PASSWORD, "c:\\home"));
@@ -50,10 +48,10 @@ public class FileTransferClientTest {
         ftpServer.start();
 
         port = ftpServer.getServerControlPort();
-        client = new FileTransferClient("localhost",
-                port,
-                USER,
-                PASSWORD);
+        client = new FtpFileTransferClient("localhost",
+                                           port,
+                                           USER,
+                                           PASSWORD);
     }
 
     @After
@@ -64,7 +62,7 @@ public class FileTransferClientTest {
 
     @Test
     public void stream() throws FileTransferException,
-            FileNotFoundException {
+            MissingFileException {
         OutputStream os = new ByteArrayOutputStream();
         assertEquals("foo.", IO.slurp(client.stream("test/foo.txt")));
     }
@@ -82,8 +80,8 @@ public class FileTransferClientTest {
 
     @Test
     public void streamNotFound() throws FileTransferException,
-            FileNotFoundException {
-        thrown.expect(FileNotFoundException.class);
+            MissingFileException {
+        thrown.expect(MissingFileException.class);
         thrown.expectMessage("File elkawrjwa not found.");
         client.stream("elkawrjwa");
     }
@@ -114,7 +112,7 @@ public class FileTransferClientTest {
     public void download() throws FileTransferException {
         OutputStream out = new ByteArrayOutputStream();
         client.optionalDownload("test/foo.txt",
-                out);
+                                out);
         assertEquals("foo.", out.toString());
     }
 
@@ -126,8 +124,8 @@ public class FileTransferClientTest {
 
     @Test
     public void downloadNonexistentFile() throws FileTransferException,
-            FileNotFoundException {
-        thrown.expect(FileNotFoundException.class);
+            MissingFileException {
+        thrown.expect(MissingFileException.class);
         thrown.expectMessage("foo");
         OutputStream os = new ByteArrayOutputStream();
         client.download("foo", os);
@@ -143,7 +141,7 @@ public class FileTransferClientTest {
     public void downloadFailure() throws FileTransferException {
         thrown.expect(FileTransferException.class);
         OutputStream os = new ByteArrayOutputStream();
-        new FileTransferClient("eakw", "foo", "bar").optionalDownload("foo", os);
+        new FtpFileTransferClient("eakw", "foo", "bar").optionalDownload("foo", os);
     }
 
     @Test
@@ -157,7 +155,7 @@ public class FileTransferClientTest {
 
     @Test
     public void downloadToPath() throws FileTransferException,
-                                        FileNotFoundException {
+            MissingFileException {
         final String FTP_PATH = "test/foo.txt";
 
         client.download(FTP_PATH, LOCAL_FILE);
@@ -166,8 +164,8 @@ public class FileTransferClientTest {
 
     @Test
     public void downloadToPathFileNotFoundOnHost() throws FileTransferException,
-                                                          FileNotFoundException {
-        thrown.expect(FileNotFoundException.class);
+            MissingFileException {
+        thrown.expect(MissingFileException.class);
         thrown.expectMessage("File test/ekajrka.txt not found.");
 
         final String FTP_PATH = "test/ekajrka.txt";
@@ -176,7 +174,7 @@ public class FileTransferClientTest {
     }
 
     @Test
-    public void upload() throws FileTransferException, FileNotFoundException {
+    public void upload() throws FileTransferException, MissingFileException {
         final String PATH = "test/baz.txt";
         final String CONTENT = "baz.";
 
@@ -186,7 +184,7 @@ public class FileTransferClientTest {
     }
 
     @Test
-    public void uploadLocalFile() throws FileTransferException, FileNotFoundException {
+    public void uploadLocalFile() throws FileTransferException, MissingFileException {
 
         final String PATH = "test/baz.txt";
         final String CONTENT = "baz.";
