@@ -47,15 +47,15 @@ public class SftpFileTransferClient {
             log.info("File transferred successfully to host.");
             return null;
         } catch (SftpException e) {
-            String message = "There was an issue executing sftp commands.";
+            String message = String.format("Failed to access path \"%s\" , please make sure that path exists.",dest);
             log.warn(message);
             throw new FileTransferException(message, e);
         } catch (java.io.FileNotFoundException e) {
-            String message = String.format("Failed to read file at %s .", source);
+            String message = String.format("Failed to read file at \"%s\" .", source);
             log.warn(message);
             throw new FileTransferException(message, e);
         } catch (IOException e) {
-            String message = String.format("Failed to read file at %s .", source);
+            String message = String.format("Failed to read file at \"%s\" .", source);
             log.warn(message);
             throw new FileTransferException(message, e);
         } finally {
@@ -70,7 +70,7 @@ public class SftpFileTransferClient {
         try {
             chan.get(path,localPath); 
         } catch (SftpException e) {
-            String message = String.format("Failed to retrieve file at path %s",path);
+            String message = String.format("Failed to retrieve file at path \"%s\".",path);
             log.warn(message);
             throw new FileTransferException(message, e);
         }finally {

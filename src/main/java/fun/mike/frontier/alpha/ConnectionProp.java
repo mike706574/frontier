@@ -5,8 +5,8 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.Session;
 
 public class ConnectionProp {
-    public Session session;
-    public ChannelSftp channel;
+    private Session session;
+    private ChannelSftp channel;
 
     public ConnectionProp(Session session, ChannelSftp channelSftp) {
         this.session = session;
