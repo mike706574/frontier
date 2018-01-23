@@ -12,8 +12,8 @@ public class FileInfo {
 
     @JsonCreator
     public FileInfo(@JsonProperty("name") String name,
-                    @JsonProperty("name") Long size,
-                    @JsonProperty("name") LocalDateTime time) {
+            @JsonProperty("name") Long size,
+            @JsonProperty("name") LocalDateTime time) {
         this.name = name;
         this.time = time;
         this.size = size;

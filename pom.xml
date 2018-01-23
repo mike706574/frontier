@@ -9,11 +9,11 @@
 
   <groupId>fun.mike</groupId>
   <artifactId>frontier-alpha</artifactId>
-  <version>0.0.2-SNAPSHOT</version>
+  <version>0.0.3-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>frontier-alpha</name>
-  <description>A FTP library. Wraps commons-net.</description>
+  <description>A file transfer library. Wraps commons-net and JSch.</description>
   <url>https://github.com/mike706574/frontier</url>
 
   <properties>
@@ -47,7 +47,7 @@
     <tag>frontier-alpha-0.0.1</tag>
   </scm>
 
-   <developers>
+  <developers>
     <developer>
       <name>Michael Easter</name>
       <email>mike706574@gmail.com</email>
@@ -65,12 +65,12 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.8.0-alpha2</version>
+      <version>1.8.0-beta0</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>2.9.1</version>
+      <version>2.9.3</version>
     </dependency>
     <dependency>
       <groupId>com.jcraft</groupId>
@@ -152,15 +152,15 @@
           <version>3.6</version>
         </plugin>
         <plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-gpg-plugin</artifactId>
-	  <version>1.6</version>
-	</plugin>
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-release-plugin</artifactId>
-	  <version>2.5.3</version>
-	</plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>1.6</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>2.5.3</version>
+        </plugin>
         <plugin>
           <groupId>org.sonatype.plugins</groupId>
           <artifactId>nexus-staging-maven-plugin</artifactId>
