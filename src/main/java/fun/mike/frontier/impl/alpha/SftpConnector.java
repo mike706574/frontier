@@ -4,8 +4,8 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.Session;
 
 public class SftpConnector {
-    public final Session session;
-    public final ChannelSftp channel;
+    private final Session session;
+    private final ChannelSftp channel;
 
     public SftpConnector(Session session, ChannelSftp channelSftp) {
         this.session = session;

@@ -40,26 +40,26 @@ public class SftpFileTransferClient implements FileTransferClient {
         this.password = password;
     }
 
-    public String upload(String source, String fileName, String dest) throws FileTransferException {
+    @Override
+    public String upload(String source,  String dest) throws FileTransferException {
         SftpConnector con = connect();
 
         try (InputStream is = new FileInputStream(source)) {
             ChannelSftp chan = con.getChannel();
-            chan.cd(dest);
 
-            chan.put(is, fileName);
+            chan.put(is, dest);
             log.info("File transferred successfully to host.");
             return null;
         } catch (SftpException e) {
-            String message = "There was an issue executing sftp commands.";
+            String message = String.format("Failed to access path \"%s\" , please make sure that path exists.",dest);
             log.warn(message);
             throw new FileTransferException(message, e);
         } catch (java.io.FileNotFoundException e) {
-            String message = String.format("Failed to read file at %s .", source);
+            String message = String.format("Failed to read file at \"%s\" .", source);
             log.warn(message);
             throw new FileTransferException(message, e);
         } catch (IOException e) {
-            String message = String.format("Failed to read file at %s .", source);
+            String message = String.format("Failed to read file at \"%s\" .", source);
             log.warn(message);
             throw new FileTransferException(message, e);
         } finally {
@@ -114,7 +114,7 @@ public class SftpFileTransferClient implements FileTransferClient {
         try {
             chan.get(path, localPath);
         } catch (SftpException e) {
-            String message = String.format("Failed to retrieve file at path %s", path);
+            String message = String.format("Failed to retrieve file at path \"%s\".",path);
             log.warn(message);
             throw new FileTransferException(message, e);
         } finally {
@@ -129,11 +129,6 @@ public class SftpFileTransferClient implements FileTransferClient {
 
     @Override
     public Map<String, Boolean> downloadAll(Map<String, OutputStream> targets) throws FileTransferException {
-        throw new UnsupportedOperationException("Not yet implemented.");
-    }
-
-    @Override
-    public String upload(String source, String dest) throws FileTransferException {
         throw new UnsupportedOperationException("Not yet implemented.");
     }
 
