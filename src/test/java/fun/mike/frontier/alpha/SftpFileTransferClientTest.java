@@ -1,6 +1,8 @@
 package fun.mike.frontier.alpha;
 
 import com.github.stefanbirkner.fakesftpserver.rule.FakeSftpServerRule;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.SftpException;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -26,14 +28,14 @@ public class SftpFileTransferClientTest  {
                                           "baz");
     }
     
-   // @Test
+   @Test
     public void uploadLocalFile() {
         final String PATH = "test/baz.txt";
         final String CONTENT = "baz.";
 
         String content = "this is a test";
         IO.spit(LOCAL_FILE, content);
-        client().upload(LOCAL_FILE, "newTest");
+        client().upload(LOCAL_FILE, "/newTest");
 
         String serverContent = getFileContent("/newTest");
 
@@ -41,15 +43,28 @@ public class SftpFileTransferClientTest  {
         assertEquals(content, serverContent);
     }
 
-    //@Test
+    @Test
     public void downloadRemoteFile() throws IOException {
         String content = "this is a test";
         server.putFile("/bar", content, UTF_8);
 
-        client().download("/bar", "./");
+        client().download("/bar", "local/bar");
 
-        assertEquals(content, IO.slurp("bar"));
-        IO.nuke("bar");
+        assertEquals(content, IO.slurp("local/bar"));
+        IO.nuke("local/bar");
+    }
+    
+    @Test
+    public void assertFileExists() throws IOException {
+        String content = "this is a test";
+        server.putFile("/bar", content, UTF_8);
+        
+        boolean shouldBeTrue = client().dirExists("/bar");
+        assertEquals(true,shouldBeTrue);
+        
+        boolean shouldBeFalse = client().dirExists("baboo");
+        assertEquals(false,shouldBeFalse);
+        
     }
 
     private String getFileContent(String path) {

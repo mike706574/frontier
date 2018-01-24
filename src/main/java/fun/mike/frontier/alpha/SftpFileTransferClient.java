@@ -43,10 +43,10 @@ public class SftpFileTransferClient implements FileTransferClient {
     @Override
     public String upload(String source,  String dest) throws FileTransferException {
         SftpConnector con = connect();
-
+        
         try (InputStream is = new FileInputStream(source)) {
             ChannelSftp chan = con.getChannel();
-
+            
             chan.put(is, dest);
             log.info("File transferred successfully to host.");
             return null;
@@ -79,7 +79,22 @@ public class SftpFileTransferClient implements FileTransferClient {
 
     @Override
     public Boolean dirExists(String path) throws FileTransferException {
-        throw new UnsupportedOperationException("Not yet implemented.");
+        SftpConnector con = connect();
+        ChannelSftp chan = con.getChannel();
+        
+        try {
+            chan.lstat(path);
+        } catch (SftpException e){
+            if(e.id == ChannelSftp.SSH_FX_NO_SUCH_FILE){
+                return false;
+            } else {
+                String message = String.format("Failed to assert that \"%s\" exists on remote server", path);
+                throw new RuntimeException(message);
+            }
+        }finally{
+            disconnect(con);
+        }
+        return true;
     }
 
     @Override
