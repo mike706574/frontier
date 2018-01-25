@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 
 public class SftpFileTransferClient implements FileTransferClient {
     private static final Logger log = LoggerFactory.getLogger(FtpFileTransferClient.class);
@@ -76,27 +75,12 @@ public class SftpFileTransferClient implements FileTransferClient {
         String locationLabel = getLocationLabel(dest);
         log.debug(String.format("Uploading local file %s to %s.", source, locationLabel));
 
-        SftpConnector con = connect();
-
         try (InputStream is = new FileInputStream(source)) {
-            ChannelSftp chan = con.getChannel();
-            chan.put(is, dest);
-            log.info("File transferred successfully to host.");
-            return null;
-        } catch (SftpException e) {
-            String message = String.format("Failed to access path \"%s\".", dest);
-            log.warn(message);
-            throw new FileTransferException(message, e);
-        } catch (java.io.FileNotFoundException e) {
-            String message = String.format("Failed to read file at \"%s\".", source);
-            log.warn(message);
-            throw new FileTransferException(message, e);
+            return upload(is, dest);
         } catch (IOException e) {
             String message = String.format("Failed to read file at \"%s\".", source);
             log.warn(message);
             throw new FileTransferException(message, e);
-        } finally {
-            disconnect(con);
         }
     }
 
@@ -179,7 +163,18 @@ public class SftpFileTransferClient implements FileTransferClient {
 
     @Override
     public String slurp(String path) throws FileTransferException, MissingFileException {
-        throw new UnsupportedOperationException("Not yet implemented.");
+        SftpConnector con = connect();
+        ChannelSftp chan = con.getChannel();
+
+        try {
+            return IO.slurp(chan.get(path));
+        } catch (SftpException e) {
+            String message = String.format("Failed to retrieve file at path \"%s\".", path);
+            log.warn(message);
+            throw new FileTransferException(message, e);
+        } finally {
+            disconnect(con);
+        }
     }
 
     @Override
@@ -224,7 +219,41 @@ public class SftpFileTransferClient implements FileTransferClient {
 
     @Override
     public String upload(InputStream is, String path) throws FileTransferException {
-        throw new UnsupportedOperationException("Not yet implemented.");
+        SftpConnector conn = connect();
+
+        try {
+            ChannelSftp chan = conn.getChannel();
+
+            chan.put(is, path);
+            log.info("File transferred successfully to host.");
+            return path;
+        } catch (SftpException e) {
+            String message = String.format("Failed to access path \"%s\".", path);
+            log.warn(message);
+            throw new FileTransferException(message, e);
+        } finally {
+            disconnect(conn);
+        }
+    }
+
+    @Override
+    public void delete(String path) throws FileTransferException {
+        SftpConnector conn = connect();
+        ChannelSftp chan = conn.getChannel();
+
+        try {
+            if (!fileExists(path)) {
+                throw fileNotFound(path);
+            }
+
+            chan.rm(path);
+        } catch (SftpException e) {
+            String message = String.format("Failed to retrieve file at path \"%s\".", path);
+            log.warn(message);
+            throw new FileTransferException(message, e);
+        } finally {
+            disconnect(conn);
+        }
     }
 
     private SftpConnector connect() {
@@ -232,8 +261,7 @@ public class SftpFileTransferClient implements FileTransferClient {
             JSch.setLogger(new SimpleJschLogger());
             JSch jsch = new JSch();
 
-
-            if (nonNull(privateKeyPath)) {
+            if (privateKeyPath != null) {
                 log.debug("Using public key authentication.");
                 log.debug("Private key path: " + privateKeyPath);
                 log.debug("Public key path: " + publicKeyPath);
@@ -247,7 +275,7 @@ public class SftpFileTransferClient implements FileTransferClient {
             }
 
             Session session = jsch.getSession(this.username, this.host, this.port);
-            if(this.password != null) {
+            if (this.password != null) {
                 log.debug("Using password.");
                 session.setPassword(this.password);
             }
@@ -280,5 +308,11 @@ public class SftpFileTransferClient implements FileTransferClient {
             return host;
         }
         return String.format("%s:%d", host, port);
+    }
+
+    private MissingFileException fileNotFound(String path) {
+        String locationLabel = getLocationLabel(path);
+        String message = String.format("File %s not found.", path);
+        return new MissingFileException(message);
     }
 }

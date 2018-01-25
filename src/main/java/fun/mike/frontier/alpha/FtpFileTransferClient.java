@@ -202,6 +202,16 @@ public class FtpFileTransferClient implements FileTransferClient {
         return withConnector(conn -> ApacheFtp.upload(conn, is, path));
     }
 
+    @Override
+    /**
+     * Deletes the file at path on the host.
+     *
+     * @param path a path on the host
+     */
+    public void delete(String path) throws FileTransferException {
+        useConnector(conn -> ApacheFtp.delete(conn, path));
+    }
+
     /**
      * Logs out and disconnects the given client from the host.
      *

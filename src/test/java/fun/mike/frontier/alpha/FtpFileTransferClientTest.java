@@ -1,27 +1,16 @@
 package fun.mike.frontier.alpha;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.List;
-import java.util.Optional;
 
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockftpserver.fake.FakeFtpServer;
 import org.mockftpserver.fake.UserAccount;
 import org.mockftpserver.fake.filesystem.DirectoryEntry;
 import org.mockftpserver.fake.filesystem.FileEntry;
 import org.mockftpserver.fake.filesystem.FileSystem;
 import org.mockftpserver.fake.filesystem.WindowsFakeFileSystem;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class FtpFileTransferClientTest extends FileTransferClientTest {
     private static final String USER = "bob";
@@ -52,9 +41,9 @@ public class FtpFileTransferClientTest extends FileTransferClientTest {
     @Override
     public FileTransferClient client() {
         return new FtpFileTransferClient("localhost",
-                                           port,
-                                           USER,
-                                           PASSWORD);
+                                         port,
+                                         USER,
+                                         PASSWORD);
     }
 
     @Test

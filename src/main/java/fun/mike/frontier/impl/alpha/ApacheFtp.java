@@ -5,8 +5,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -16,9 +14,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import fun.mike.frontier.alpha.FileInfo;
-import fun.mike.frontier.alpha.MissingFileException;
 import fun.mike.frontier.alpha.FileTransferException;
 import fun.mike.frontier.alpha.IO;
+import fun.mike.frontier.alpha.MissingFileException;
 import org.apache.commons.net.ftp.FTPClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,6 +122,36 @@ public class ApacheFtp {
     }
 
     /**
+     * Deletes the file at path on the host.
+     *
+     * @param conn a FtpConnector instance.
+     * @param path a path on the host
+     */
+    public static void delete(FtpConnector conn, String path) throws FileTransferException {
+        String locationLabel = getLocationLabel(conn, path);
+        log.debug(String.format("Deleting file %s.", locationLabel));
+        FTPClient client = conn.getClient();
+
+        try {
+            if (!fileExists(conn, path)) {
+                throw fileNotFound(conn, path);
+            }
+
+            boolean deleted = client.deleteFile(path);
+
+            if (!deleted) {
+                String message = String.format("Failed to delete %s.", locationLabel);
+                log.warn(message);
+                throw new FileTransferException(message);
+            }
+        } catch (IOException ex) {
+            String message = String.format("I/O error deleting %s.", locationLabel);
+            log.warn(message);
+            throw new FileTransferException(message, ex);
+        }
+    }
+
+    /**
      * Checks if a file exists on the host using the given client.
      *
      * @param conn a FtpConnector instance.
@@ -134,28 +162,45 @@ public class ApacheFtp {
         String locationLabel = getLocationLabel(conn, path);
         log.debug(String.format("Checking if file %s exists.",
                                 locationLabel));
-        // TODO: Is this good enough? Probably not.
-        List<FileInfo> files = list(conn, path);
 
-        if(files.size() == 0) {
-            return false;
-        }
+        try {
+            FTPClient client = conn.getClient();
+            List<FileInfo> files = Arrays.stream(client.listFiles(path))
+                    .map(file -> {
+                        Calendar timestamp = file.getTimestamp();
 
-        if(files.size() > 1) {
-            String message = String.format("%d files found when checking if %s exists.",
-                                           path);
-            throw new FileTransferException(message);
-        }
+                        return new FileInfo(file.getName(),
+                                            file.getSize(),
+                                            file.getTimestamp().getTime(),
+                                            file.isDirectory());
+                    })
+                    .collect(Collectors.toList());
 
-        FileInfo info = files.get(0);
+            if (files.size() == 0) {
+                return false;
+            }
 
-        if(info.isDirectory()) {
-            String message = String.format("%s exists, but is a directory.",
+            if (files.size() > 1) {
+                String message = String.format("%d files found when checking if %s exists.",
+                                               path);
+                throw new FileTransferException(message);
+            }
+
+            FileInfo info = files.get(0);
+
+            if (info.isDirectory()) {
+                String message = String.format("%s exists, but is a directory.",
+                                               locationLabel);
+                throw new FileTransferException(message);
+            }
+
+            return true;
+        } catch (IOException ex) {
+            String message = String.format("I/O error checking if %s exists.",
                                            locationLabel);
-            throw new FileTransferException(message);
+            log.warn(message);
+            throw new FileTransferException(message, ex);
         }
-
-        return true;
     }
 
     /**

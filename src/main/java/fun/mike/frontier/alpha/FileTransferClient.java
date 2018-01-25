@@ -34,4 +34,6 @@ public interface FileTransferClient {
     String upload(String source, String dest) throws FileTransferException;
 
     String upload(InputStream is, String path) throws FileTransferException;
+
+    void delete(String path) throws FileTransferException;
 }

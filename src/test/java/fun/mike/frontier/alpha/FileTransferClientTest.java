@@ -8,16 +8,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockftpserver.fake.FakeFtpServer;
-import org.mockftpserver.fake.UserAccount;
-import org.mockftpserver.fake.filesystem.DirectoryEntry;
-import org.mockftpserver.fake.filesystem.FileEntry;
-import org.mockftpserver.fake.filesystem.FileSystem;
-import org.mockftpserver.fake.filesystem.WindowsFakeFileSystem;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -83,7 +76,7 @@ public abstract class FileTransferClientTest {
     public void download() throws FileTransferException {
         OutputStream out = new ByteArrayOutputStream();
         client().optionalDownload("test/foo.txt",
-                                out);
+                                  out);
         assertEquals("foo.", out.toString());
     }
 
@@ -155,6 +148,24 @@ public abstract class FileTransferClientTest {
         InputStream in = new ByteArrayInputStream(CONTENT.getBytes());
         assertEquals(PATH, client.upload(in, PATH));
         assertEquals(CONTENT, client.slurp(PATH));
+    }
+
+    @Test
+    public void delete() throws FileTransferException, MissingFileException {
+        FileTransferClient client = client();
+
+        final String PATH = "baz.txt";
+        final String CONTENT = "baz.";
+
+        InputStream in = new ByteArrayInputStream(CONTENT.getBytes());
+        assertEquals(PATH, client.upload(in, PATH));
+        assertEquals(CONTENT, client.slurp(PATH));
+
+        assertTrue(client.fileExists(PATH));
+
+        client.delete(PATH);
+
+        assertFalse(client.fileExists(PATH));
     }
 
     @Test
