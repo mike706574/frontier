@@ -110,6 +110,13 @@ public abstract class FileTransferClientTest {
     }
 
     @Test
+    public void fileExists() throws FileTransferException {
+        FileTransferClient client = client();
+        assertTrue(client.dirExists("test"));
+        assertFalse(client.dirExists("fake"));
+    }
+
+    @Test
     public void downloadToFile() throws FileTransferException {
         final String FTP_PATH = "test/foo.txt";
 

@@ -136,7 +136,26 @@ public class ApacheFtp {
                                 locationLabel));
         // TODO: Is this good enough? Probably not.
         List<FileInfo> files = list(conn, path);
-        return files.size() == 1;
+
+        if(files.size() == 0) {
+            return false;
+        }
+
+        if(files.size() > 1) {
+            String message = String.format("%d files found when checking if %s exists.",
+                                           path);
+            throw new FileTransferException(message);
+        }
+
+        FileInfo info = files.get(0);
+
+        if(info.isDirectory()) {
+            String message = String.format("%s exists, but is a directory.",
+                                           locationLabel);
+            throw new FileTransferException(message);
+        }
+
+        return true;
     }
 
     /**
@@ -154,7 +173,6 @@ public class ApacheFtp {
         }
         return Optional.empty();
     }
-
 
     /**
      * Reads the contents of a file on the host to a string using the given client.

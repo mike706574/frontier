@@ -35,7 +35,7 @@ public class FileInfo {
         return time;
     }
 
-    public Boolean getDirectory() {
+    public Boolean isDirectory() {
         return isDirectory;
     }
 
