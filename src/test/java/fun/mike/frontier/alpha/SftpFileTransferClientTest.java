@@ -21,12 +21,12 @@ public class SftpFileTransferClientTest  {
     private final String LOCAL_FILE = "local/foo.txt";
 
     public FileTransferClient client() {
-        return new SftpFileTransferClient("localhost",
-                                          PORT,
-                                          "foo",
-                                          "baz");
+        return SftpFileTransferClient.withPassword("localhost",
+                                                   PORT,
+                                                   "foo",
+                                                   "baz");
     }
-    
+
    @Test
     public void uploadLocalFile() {
         final String PATH = "test/baz.txt";
@@ -52,18 +52,18 @@ public class SftpFileTransferClientTest  {
         assertEquals(content, IO.slurp("local/bar"));
         IO.nuke("local/bar");
     }
-    
+
     @Test
     public void assertFileExists() throws IOException {
         String content = "this is a test";
         server.putFile("/bar", content, UTF_8);
-        
+
         boolean shouldBeTrue = client().fileExists("/bar");
         assertEquals(true,shouldBeTrue);
-        
+
         boolean shouldBeFalse = client().fileExists("baboo");
         assertEquals(false,shouldBeFalse);
-        
+
     }
 
     private String getFileContent(String path) {

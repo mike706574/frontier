@@ -31,7 +31,6 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @param username a username
      * @param password a password
      */
-
     public FtpFileTransferClient(String host,
             String username,
             String password) {
