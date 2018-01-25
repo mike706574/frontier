@@ -74,15 +74,15 @@ public class ApacheFtp {
      * Checks if a file exists on the host using the given client.
      *
      * @param conn a FtpConnector instance.
-     * @param path a path to the file on the host.
+     * @param path a path to the directory on the host.
      * @return true if the directory at path exists; otherwise, false.
      */
     public static Boolean dirExists(FtpConnector conn, String path) throws FileTransferException {
         String locationLabel = getLocationLabel(conn, path);
+        log.debug(String.format("Checking if directory %s exists.",
+                                locationLabel));
         FTPClient client = conn.getClient();
         try {
-            log.debug(String.format("Checking if directory %s exists.",
-                                    locationLabel));
             String workingDir = client.printWorkingDirectory();
             client.changeWorkingDirectory(path);
 
@@ -121,6 +121,22 @@ public class ApacheFtp {
             log.warn(message);
             throw new FileTransferException(message, ex);
         }
+    }
+
+    /**
+     * Checks if a file exists on the host using the given client.
+     *
+     * @param conn a FtpConnector instance.
+     * @param path a path to the file on the host.
+     * @return true if the file at path exists; otherwise, false.
+     */
+    public static Boolean fileExists(FtpConnector conn, String path) throws FileTransferException {
+        String locationLabel = getLocationLabel(conn, path);
+        log.debug(String.format("Checking if file %s exists.",
+                                locationLabel));
+        // TODO: Is this good enough? Probably not.
+        List<FileInfo> files = list(conn, path);
+        return files.size() == 1;
     }
 
     /**
@@ -172,11 +188,11 @@ public class ApacheFtp {
             List<FileInfo> files = Arrays.stream(client.listFiles(path))
                     .map(file -> {
                         Calendar timestamp = file.getTimestamp();
-                        LocalDateTime time = LocalDateTime.ofInstant(timestamp.toInstant(),
-                                                                     ZoneId.systemDefault());
+
                         return new FileInfo(file.getName(),
                                             file.getSize(),
-                                            time);
+                                            file.getTimestamp().getTime(),
+                                            file.isDirectory());
                     })
                     .collect(Collectors.toList());
             log.debug(String.format("Found %d files.", files.size()));

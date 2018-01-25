@@ -20,7 +20,6 @@ public class SftpFileTransferClientTest  {
     public final FakeSftpServerRule server = new FakeSftpServerRule().setPort(PORT);
     private final String LOCAL_FILE = "local/foo.txt";
 
-    //@Override
     public FileTransferClient client() {
         return new SftpFileTransferClient("localhost",
                                           PORT,
@@ -59,10 +58,10 @@ public class SftpFileTransferClientTest  {
         String content = "this is a test";
         server.putFile("/bar", content, UTF_8);
         
-        boolean shouldBeTrue = client().dirExists("/bar");
+        boolean shouldBeTrue = client().fileExists("/bar");
         assertEquals(true,shouldBeTrue);
         
-        boolean shouldBeFalse = client().dirExists("baboo");
+        boolean shouldBeFalse = client().fileExists("baboo");
         assertEquals(false,shouldBeFalse);
         
     }

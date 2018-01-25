@@ -1,6 +1,7 @@
 package fun.mike.frontier.alpha;
 
-import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -8,47 +9,34 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class FileInfo {
     private final String name;
     private final Long size;
-    private final LocalDateTime time;
+    private final Date time;
+    private final Boolean isDirectory;
 
     @JsonCreator
     public FileInfo(@JsonProperty("name") String name,
-            @JsonProperty("name") Long size,
-            @JsonProperty("name") LocalDateTime time) {
+            @JsonProperty("size") Long size,
+            @JsonProperty("time") Date time,
+            @JsonProperty("isDirectory") Boolean isDirectory) {
         this.name = name;
         this.time = time;
         this.size = size;
+        this.isDirectory = isDirectory;
     }
 
     public String getName() {
-        return this.name;
+        return name;
     }
 
     public Long getSize() {
-        return this.size;
+        return size;
     }
 
-    public LocalDateTime getTime() {
+    public Date getTime() {
         return time;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        FileInfo fileInfo = (FileInfo) o;
-
-        if (!name.equals(fileInfo.name)) return false;
-        if (!size.equals(fileInfo.size)) return false;
-        return time.equals(fileInfo.time);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = name.hashCode();
-        result = 31 * result + size.hashCode();
-        result = 31 * result + time.hashCode();
-        return result;
+    public Boolean getDirectory() {
+        return isDirectory;
     }
 
     @Override
@@ -57,6 +45,24 @@ public class FileInfo {
                 "name='" + name + '\'' +
                 ", size=" + size +
                 ", time=" + time +
+                ", isDirectory=" + isDirectory +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FileInfo fileInfo = (FileInfo) o;
+        return Objects.equals(name, fileInfo.name) &&
+                Objects.equals(size, fileInfo.size) &&
+                Objects.equals(time, fileInfo.time) &&
+                Objects.equals(isDirectory, fileInfo.isDirectory);
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(name, size, time, isDirectory);
     }
 }

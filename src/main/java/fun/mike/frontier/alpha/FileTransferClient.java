@@ -13,6 +13,8 @@ public interface FileTransferClient {
 
     Boolean dirExists(String path) throws FileTransferException;
 
+    Boolean fileExists(String path) throws FileTransferException;
+
     Optional<String> optionalSlurp(String path) throws FileTransferException, MissingFileException;
 
     String slurp(String path) throws FileTransferException, MissingFileException;

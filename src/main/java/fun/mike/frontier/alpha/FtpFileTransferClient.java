@@ -77,13 +77,24 @@ public class FtpFileTransferClient implements FileTransferClient {
     }
 
     /**
-     * Checks if a file exists on the host.
+     * Checks if a directory exists on the host.
      *
-     * @param path a path to the file on the host.
+     * @param path a path to the directory on the host.
      * @return true if the directory at path exists; otherwise, false.
      */
     public Boolean dirExists(String path) throws FileTransferException {
         return withConnector(conn -> ApacheFtp.dirExists(conn, path));
+    }
+
+    /**
+     * Checks if a file exists on the host.
+     *
+     * @param path a path to the file on the host.
+     * @return true if the file at path exists; otherwise, false.
+     */
+    @Override
+    public Boolean fileExists(String path) throws FileTransferException {
+        return withConnector(conn -> ApacheFtp.fileExists(conn, path));
     }
 
     /**

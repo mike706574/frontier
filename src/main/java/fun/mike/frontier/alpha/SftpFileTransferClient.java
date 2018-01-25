@@ -13,6 +13,7 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
 import fun.mike.frontier.impl.alpha.SftpConnector;
 import org.slf4j.Logger;
@@ -41,25 +42,27 @@ public class SftpFileTransferClient implements FileTransferClient {
     }
 
     @Override
-    public String upload(String source,  String dest) throws FileTransferException {
+    public String upload(String source, String dest) throws FileTransferException {
+        String locationLabel = getLocationLabel(dest);
+        log.debug(String.format("Uploading local file %s to %s.", source, locationLabel));
+
         SftpConnector con = connect();
-        
+
         try (InputStream is = new FileInputStream(source)) {
             ChannelSftp chan = con.getChannel();
-            
             chan.put(is, dest);
             log.info("File transferred successfully to host.");
             return null;
         } catch (SftpException e) {
-            String message = String.format("Failed to access path \"%s\" , please make sure that path exists.",dest);
+            String message = String.format("Failed to access path \"%s\".", dest);
             log.warn(message);
             throw new FileTransferException(message, e);
         } catch (java.io.FileNotFoundException e) {
-            String message = String.format("Failed to read file at \"%s\" .", source);
+            String message = String.format("Failed to read file at \"%s\".", source);
             log.warn(message);
             throw new FileTransferException(message, e);
         } catch (IOException e) {
-            String message = String.format("Failed to read file at \"%s\" .", source);
+            String message = String.format("Failed to read file at \"%s\".", source);
             log.warn(message);
             throw new FileTransferException(message, e);
         } finally {
@@ -79,22 +82,64 @@ public class SftpFileTransferClient implements FileTransferClient {
 
     @Override
     public Boolean dirExists(String path) throws FileTransferException {
+        String locationLabel = getLocationLabel(path);
+        log.debug(String.format("Checking if directory %s exists.",
+                                locationLabel));
+
         SftpConnector con = connect();
         ChannelSftp chan = con.getChannel();
-        
+
         try {
-            chan.lstat(path);
-        } catch (SftpException e){
-            if(e.id == ChannelSftp.SSH_FX_NO_SUCH_FILE){
+            SftpATTRS attrs = chan.lstat(path);
+
+            if (attrs.isDir()) {
+                return true;
+            }
+
+            String message = String.format("%s exists, but is not a directory.",
+                                           locationLabel);
+            throw new FileTransferException(message);
+        } catch (SftpException e) {
+            if (e.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
                 return false;
             } else {
-                String message = String.format("Failed to assert that \"%s\" exists on remote server", path);
-                throw new RuntimeException(message);
+                String message = String.format("Error asserting if directory %s exists.", locationLabel);
+                throw new FileTransferException(message);
             }
-        }finally{
+        } finally {
             disconnect(con);
         }
-        return true;
+    }
+
+    @Override
+    public Boolean fileExists(String path) throws FileTransferException {
+        String locationLabel = getLocationLabel(path);
+        log.debug(String.format("Checking if directory %s exists.",
+                                locationLabel));
+
+        SftpConnector con = connect();
+        ChannelSftp chan = con.getChannel();
+
+        try {
+            SftpATTRS attrs = chan.lstat(path);
+
+            if (attrs.isDir()) {
+                String message = String.format("%s exists, but is a directory.",
+                                               locationLabel);
+                throw new FileTransferException(message);
+            }
+
+            return true;
+        } catch (SftpException e) {
+            if (e.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
+                return false;
+            } else {
+                String message = String.format("Error asserting if file %s exists.", locationLabel);
+                throw new FileTransferException(message);
+            }
+        } finally {
+            disconnect(con);
+        }
     }
 
     @Override
@@ -129,7 +174,7 @@ public class SftpFileTransferClient implements FileTransferClient {
         try {
             chan.get(path, localPath);
         } catch (SftpException e) {
-            String message = String.format("Failed to retrieve file at path \"%s\".",path);
+            String message = String.format("Failed to retrieve file at path \"%s\".", path);
             log.warn(message);
             throw new FileTransferException(message, e);
         } finally {
@@ -175,4 +220,14 @@ public class SftpFileTransferClient implements FileTransferClient {
         conn.getChannel().disconnect();
     }
 
+    private String getLocationLabel(String path) {
+        return String.format("%s:%s", getHostLabel(), path);
+    }
+
+    private String getHostLabel() {
+        if (port == 21) {
+            return host;
+        }
+        return String.format("%s:%d", host, port);
+    }
 }
