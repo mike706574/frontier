@@ -243,21 +243,21 @@ public class SftpFileTransferClient implements FileTransferClient {
             JSch jsch = new JSch();
 
             if (privateKeyPath != null) {
-                log.debug("Using public key authentication.");
-                log.debug("Private key path: " + privateKeyPath);
-                log.debug("Public key path: " + publicKeyPath);
+                log.trace("Using public key authentication.");
+                log.trace("Private key path: " + privateKeyPath);
+                log.trace("Public key path: " + publicKeyPath);
                 if (isNull(passphrase)) {
-                    log.debug("No passphrase given.");
+                    log.trace("No passphrase given.");
                     jsch.addIdentity(privateKeyPath, publicKeyPath);
                 } else {
-                    log.debug("Using given passphrase.");
+                    log.trace("Using given passphrase.");
                     jsch.addIdentity(privateKeyPath, publicKeyPath, passphrase);
                 }
             }
 
             Session session = jsch.getSession(this.username, this.host, this.port);
             if (this.password != null) {
-                log.debug("Using password.");
+                log.trace("Using password.");
                 session.setPassword(this.password);
             }
 
