@@ -120,6 +120,10 @@ public class IO {
         }
     }
 
+    public static boolean exists(String path) {
+        return new File(path).exists();
+    }
+
     public static long pipe(InputStream input, OutputStream output) {
         try {
             byte[] buffer = new byte[1024];

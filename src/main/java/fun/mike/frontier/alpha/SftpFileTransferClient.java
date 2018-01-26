@@ -71,31 +71,36 @@ public class SftpFileTransferClient implements FileTransferClient {
     }
 
     @Override
-    public String upload(String source, String dest) throws FileTransferException {
+    public String upload(String source, String dest) {
         String locationLabel = getLocationLabel(dest);
         log.debug(String.format("Uploading local file %s to %s.", source, locationLabel));
+
+        if(!IO.exists(source)) {
+            String message = String.format("Failed to read local source file \"%s\".", source);
+            throw new MissingLocalFileException(message);
+        }
 
         try (InputStream is = new FileInputStream(source)) {
             return upload(is, dest);
         } catch (IOException e) {
-            String message = String.format("Failed to read file at \"%s\".", source);
+            String message = String.format("Failed to read local source file \"%s\".", source);
             log.warn(message);
             throw new FileTransferException(message, e);
         }
     }
 
     @Override
-    public Optional<InputStream> optionalStream(String path) throws FileTransferException {
+    public Optional<InputStream> optionalStream(String path) {
         throw new UnsupportedOperationException("Not yet implemented.");
     }
 
     @Override
-    public InputStream stream(String path) throws FileTransferException, MissingFileException {
+    public InputStream stream(String path) {
         throw new UnsupportedOperationException("Not yet implemented.");
     }
 
     @Override
-    public Boolean dirExists(String path) throws FileTransferException {
+    public Boolean dirExists(String path) {
         String locationLabel = getLocationLabel(path);
         log.debug(String.format("Checking if directory %s exists.",
                                 locationLabel));
@@ -126,7 +131,7 @@ public class SftpFileTransferClient implements FileTransferClient {
     }
 
     @Override
-    public Boolean fileExists(String path) throws FileTransferException {
+    public Boolean fileExists(String path) {
         String locationLabel = getLocationLabel(path);
         log.debug(String.format("Checking if directory %s exists.",
                                 locationLabel));
@@ -157,12 +162,12 @@ public class SftpFileTransferClient implements FileTransferClient {
     }
 
     @Override
-    public Optional<String> optionalSlurp(String path) throws FileTransferException, MissingFileException {
+    public Optional<String> optionalSlurp(String path) {
         throw new UnsupportedOperationException("Not yet implemented.");
     }
 
     @Override
-    public String slurp(String path) throws FileTransferException, MissingFileException {
+    public String slurp(String path) {
         SftpConnector con = connect();
         ChannelSftp chan = con.getChannel();
 
@@ -178,12 +183,12 @@ public class SftpFileTransferClient implements FileTransferClient {
     }
 
     @Override
-    public List<FileInfo> list(String path) throws FileTransferException {
+    public List<FileInfo> list(String path) {
         throw new UnsupportedOperationException("Not yet implemented.");
     }
 
     @Override
-    public Boolean optionalDownload(String path, String localPath) throws FileTransferException {
+    public Boolean optionalDownload(String path, String localPath){
         throw new UnsupportedOperationException("Not yet implemented.");
     }
 
@@ -208,24 +213,23 @@ public class SftpFileTransferClient implements FileTransferClient {
     }
 
     @Override
-    public OutputStream download(String path, OutputStream stream) throws FileTransferException, MissingFileException {
+    public OutputStream download(String path, OutputStream stream) {
         throw new UnsupportedOperationException("Not yet implemented.");
     }
 
     @Override
-    public Map<String, Boolean> downloadAll(Map<String, OutputStream> targets) throws FileTransferException {
+    public Map<String, Boolean> downloadAll(Map<String, OutputStream> targets) {
         throw new UnsupportedOperationException("Not yet implemented.");
     }
 
     @Override
-    public String upload(InputStream is, String path) throws FileTransferException {
+    public String upload(InputStream is, String path) {
         SftpConnector conn = connect();
 
         try {
             ChannelSftp chan = conn.getChannel();
-
             chan.put(is, path);
-            log.info("File transferred successfully to host.");
+            log.info("File successfully transferred to host.");
             return path;
         } catch (SftpException e) {
             String message = String.format("Failed to access path \"%s\".", path);
@@ -237,13 +241,13 @@ public class SftpFileTransferClient implements FileTransferClient {
     }
 
     @Override
-    public void delete(String path) throws FileTransferException {
+    public void delete(String path) {
         SftpConnector conn = connect();
         ChannelSftp chan = conn.getChannel();
 
         try {
             if (!fileExists(path)) {
-                throw fileNotFound(path);
+                throw remoteFileNotFound(path);
             }
 
             chan.rm(path);
@@ -310,9 +314,9 @@ public class SftpFileTransferClient implements FileTransferClient {
         return String.format("%s:%d", host, port);
     }
 
-    private MissingFileException fileNotFound(String path) {
+    private MissingRemoteFileException remoteFileNotFound(String path) {
         String locationLabel = getLocationLabel(path);
         String message = String.format("File %s not found.", path);
-        return new MissingFileException(message);
+        return new MissingRemoteFileException(message);
     }
 }

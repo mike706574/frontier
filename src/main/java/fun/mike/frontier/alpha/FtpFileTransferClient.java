@@ -61,7 +61,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @param path the path to a file on the host.
      * @return an Optional containing an InputStream to the file at path if it exists; otherwise, an empty Optional.
      */
-    public Optional<InputStream> optionalStream(String path) throws FileTransferException {
+    public Optional<InputStream> optionalStream(String path) {
         return withConnector(conn -> ApacheFtp.optionalStream(conn, path));
     }
 
@@ -71,7 +71,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @param path the path to a file on the host.
      * @return an InputStream to the file at path
      */
-    public InputStream stream(String path) throws FileTransferException, MissingFileException {
+    public InputStream stream(String path) {
         return withConnector(conn -> ApacheFtp.stream(conn, path));
     }
 
@@ -81,7 +81,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @param path a path to the directory on the host.
      * @return true if the directory at path exists; otherwise, false.
      */
-    public Boolean dirExists(String path) throws FileTransferException {
+    public Boolean dirExists(String path) {
         return withConnector(conn -> ApacheFtp.dirExists(conn, path));
     }
 
@@ -92,7 +92,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @return true if the file at path exists; otherwise, false.
      */
     @Override
-    public Boolean fileExists(String path) throws FileTransferException {
+    public Boolean fileExists(String path) {
         return withConnector(conn -> ApacheFtp.fileExists(conn, path));
     }
 
@@ -102,7 +102,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @param path a path to a file on the host.
      * @return an Optional containing the contents of the file if it exists; otherwise, an empty Optional.
      */
-    public Optional<String> optionalSlurp(String path) throws FileTransferException, MissingFileException {
+    public Optional<String> optionalSlurp(String path) {
         return withConnector(conn -> ApacheFtp.optionalSlurp(conn, path));
     }
 
@@ -112,7 +112,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @param path a path to a file on the host.
      * @return the contents of the file at path as a string.
      */
-    public String slurp(String path) throws FileTransferException, MissingFileException {
+    public String slurp(String path) {
         return withConnector(conn -> ApacheFtp.slurp(conn, path));
     }
 
@@ -122,7 +122,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @param path a path to a directory on the host.
      * @return a list of files.
      */
-    public List<FileInfo> list(String path) throws FileTransferException {
+    public List<FileInfo> list(String path) {
         return withConnector(conn -> ApacheFtp.list(conn, path));
     }
 
@@ -133,7 +133,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @param localPath a path on the local machine.
      * @return true if the file exists and was downloaded; otherwise, false.
      */
-    public Boolean optionalDownload(String path, String localPath) throws FileTransferException {
+    public Boolean optionalDownload(String path, String localPath) {
         return withConnector(conn -> ApacheFtp.optionalDownload(conn, path, localPath));
     }
 
@@ -144,7 +144,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @param stream An OutputStream to write to.
      * @return An Optional containing the OutputStream if the file exists; otherwise, an empty Optional.
      */
-    public Optional<OutputStream> optionalDownload(String path, OutputStream stream) throws FileTransferException {
+    public Optional<OutputStream> optionalDownload(String path, OutputStream stream) {
         return withConnector(conn -> ApacheFtp.optionalDownload(conn, path, stream));
     }
 
@@ -154,7 +154,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @param path      a path to a file on the host.
      * @param localPath a local path to a file to be written to.
      */
-    public void download(String path, String localPath) throws FileTransferException, MissingFileException {
+    public void download(String path, String localPath) {
         useConnector(conn -> ApacheFtp.download(conn, path, localPath));
     }
 
@@ -165,7 +165,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @param stream An OutputStream to write to.
      * @return An Optional containing the OutputStream if the file exists; otherwise, an empty Optional.
      */
-    public OutputStream download(String path, OutputStream stream) throws FileTransferException, MissingFileException {
+    public OutputStream download(String path, OutputStream stream) {
         return withConnector(conn -> ApacheFtp.download(conn, path, stream));
     }
 
@@ -176,7 +176,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @return An Map of paths to a Boolean indicating if the respective file was found and written to their respective
      * OutputStream.
      */
-    public Map<String, Boolean> downloadAll(Map<String, OutputStream> targets) throws FileTransferException {
+    public Map<String, Boolean> downloadAll(Map<String, OutputStream> targets) {
         return withConnector(conn -> ApacheFtp.downloadAll(conn, targets));
     }
 
@@ -187,7 +187,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @param dest   a path to write to on the host
      * @return the path written to
      */
-    public String upload(String source, String dest) throws FileTransferException {
+    public String upload(String source, String dest) {
         return withConnector(conn -> ApacheFtp.upload(conn, source, dest));
     }
 
@@ -198,7 +198,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      * @param is   an InputStream containing the content to be written.
      * @return the path written to
      */
-    public String upload(InputStream is, String path) throws FileTransferException {
+    public String upload(InputStream is, String path) {
         return withConnector(conn -> ApacheFtp.upload(conn, is, path));
     }
 
@@ -208,7 +208,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      *
      * @param path a path on the host
      */
-    public void delete(String path) throws FileTransferException {
+    public void delete(String path) {
         useConnector(conn -> ApacheFtp.delete(conn, path));
     }
 
@@ -217,7 +217,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      *
      * @param client An FTPClient instance.
      */
-    private void disconnect(FTPClient client) throws FileTransferException {
+    private void disconnect(FTPClient client) {
         if (client == null) {
             return;
         }
@@ -252,7 +252,7 @@ public class FtpFileTransferClient implements FileTransferClient {
      *
      * @return An FTPClient instance.
      */
-    private FTPClient connect() throws FileTransferException {
+    private FTPClient connect() {
         String hostLabel = getHostLabel();
         try {
             log.debug(String.format("Connecting to %s as %s.", hostLabel, username));

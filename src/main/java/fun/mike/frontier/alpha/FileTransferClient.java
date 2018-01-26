@@ -7,33 +7,33 @@ import java.util.Map;
 import java.util.Optional;
 
 public interface FileTransferClient {
-    Optional<InputStream> optionalStream(String path) throws FileTransferException;
+    Optional<InputStream> optionalStream(String path);
 
-    InputStream stream(String path) throws FileTransferException, MissingFileException;
+    InputStream stream(String path);
 
-    Boolean dirExists(String path) throws FileTransferException;
+    Boolean dirExists(String path);
 
-    Boolean fileExists(String path) throws FileTransferException;
+    Boolean fileExists(String path);
 
-    Optional<String> optionalSlurp(String path) throws FileTransferException, MissingFileException;
+    Optional<String> optionalSlurp(String path);
 
-    String slurp(String path) throws FileTransferException, MissingFileException;
+    String slurp(String path);
 
-    List<FileInfo> list(String path) throws FileTransferException;
+    List<FileInfo> list(String path);
 
-    Boolean optionalDownload(String path, String localPath) throws FileTransferException;
+    Boolean optionalDownload(String path, String localPath);
 
-    Optional<OutputStream> optionalDownload(String path, OutputStream stream) throws FileTransferException;
+    Optional<OutputStream> optionalDownload(String path, OutputStream stream);
 
-    void download(String path, String localPath) throws FileTransferException, MissingFileException;
+    void download(String path, String localPath);
 
-    OutputStream download(String path, OutputStream stream) throws FileTransferException, MissingFileException;
+    OutputStream download(String path, OutputStream stream);
 
-    Map<String, Boolean> downloadAll(Map<String, OutputStream> targets) throws FileTransferException;
+    Map<String, Boolean> downloadAll(Map<String, OutputStream> targets);
 
-    String upload(String source, String dest) throws FileTransferException;
+    String upload(String source, String dest);
 
-    String upload(InputStream is, String path) throws FileTransferException;
+    String upload(InputStream is, String path);
 
-    void delete(String path) throws FileTransferException;
+    void delete(String path);
 }

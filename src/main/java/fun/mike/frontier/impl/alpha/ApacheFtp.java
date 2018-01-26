@@ -16,7 +16,8 @@ import java.util.stream.Collectors;
 import fun.mike.frontier.alpha.FileInfo;
 import fun.mike.frontier.alpha.FileTransferException;
 import fun.mike.frontier.alpha.IO;
-import fun.mike.frontier.alpha.MissingFileException;
+import fun.mike.frontier.alpha.MissingLocalFileException;
+import fun.mike.frontier.alpha.MissingRemoteFileException;
 import org.apache.commons.net.ftp.FTPClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,7 @@ public class ApacheFtp {
      * @param path the path to a file on the host.
      * @return an Optional containing an InputStream to the file at path if it exists; otherwise, an empty Optional.
      */
-    public static Optional<InputStream> optionalStream(FtpConnector conn, String path) throws FileTransferException {
+    public static Optional<InputStream> optionalStream(FtpConnector conn, String path) {
         FTPClient client = conn.getClient();
         String locationLabel = getLocationLabel(conn, path);
         try {
@@ -64,8 +65,8 @@ public class ApacheFtp {
      * @param path the path to a file on the host.
      * @return an InputStream to the file at path
      */
-    public static InputStream stream(FtpConnector conn, String path) throws FileTransferException, MissingFileException {
-        return optionalStream(conn, path).orElseThrow(() -> fileNotFound(conn, path));
+    public static InputStream stream(FtpConnector conn, String path) {
+        return optionalStream(conn, path).orElseThrow(() -> remoteFileNotFound(conn, path));
     }
 
     /**
@@ -75,7 +76,7 @@ public class ApacheFtp {
      * @param path a path to the directory on the host.
      * @return true if the directory at path exists; otherwise, false.
      */
-    public static Boolean dirExists(FtpConnector conn, String path) throws FileTransferException {
+    public static Boolean dirExists(FtpConnector conn, String path) {
         String locationLabel = getLocationLabel(conn, path);
         log.debug(String.format("Checking if directory %s exists.",
                                 locationLabel));
@@ -127,14 +128,14 @@ public class ApacheFtp {
      * @param conn a FtpConnector instance.
      * @param path a path on the host
      */
-    public static void delete(FtpConnector conn, String path) throws FileTransferException {
+    public static void delete(FtpConnector conn, String path) {
         String locationLabel = getLocationLabel(conn, path);
         log.debug(String.format("Deleting file %s.", locationLabel));
         FTPClient client = conn.getClient();
 
         try {
             if (!fileExists(conn, path)) {
-                throw fileNotFound(conn, path);
+                throw remoteFileNotFound(conn, path);
             }
 
             boolean deleted = client.deleteFile(path);
@@ -158,7 +159,7 @@ public class ApacheFtp {
      * @param path a path to the file on the host.
      * @return true if the file at path exists; otherwise, false.
      */
-    public static Boolean fileExists(FtpConnector conn, String path) throws FileTransferException {
+    public static Boolean fileExists(FtpConnector conn, String path) {
         String locationLabel = getLocationLabel(conn, path);
         log.debug(String.format("Checking if file %s exists.",
                                 locationLabel));
@@ -210,7 +211,7 @@ public class ApacheFtp {
      * @param path a path to a file on the host.
      * @return an Optional containing the contents of the file at path as a string; otherwise an empty Optional.
      */
-    public static Optional<String> optionalSlurp(FtpConnector conn, String path) throws FileTransferException, MissingFileException {
+    public static Optional<String> optionalSlurp(FtpConnector conn, String path) {
         Optional<InputStream> is = optionalStream(conn, path);
         if (is.isPresent()) {
             return Optional.of(IO.slurp(is.get()));
@@ -226,8 +227,8 @@ public class ApacheFtp {
      * @param path a path to a file on the host.
      * @return the contents of the file at path as a string.
      */
-    public static String slurp(FtpConnector conn, String path) throws FileTransferException, MissingFileException {
-        return optionalSlurp(conn, path).orElseThrow(() -> fileNotFound(conn, path));
+    public static String slurp(FtpConnector conn, String path) {
+        return optionalSlurp(conn, path).orElseThrow(() -> remoteFileNotFound(conn, path));
     }
 
     /**
@@ -237,7 +238,7 @@ public class ApacheFtp {
      * @param path a path to a directory on the host.
      * @return a list of files.
      */
-    public static List<FileInfo> list(FtpConnector conn, String path) throws FileTransferException {
+    public static List<FileInfo> list(FtpConnector conn, String path) {
         String locationLabel = getLocationLabel(conn, path);
         try {
             FTPClient client = conn.getClient();
@@ -275,7 +276,7 @@ public class ApacheFtp {
      * @param localPath a path on the local machine.
      * @return true if the file exists and was downloaded; otherwise, false.
      */
-    public static Boolean optionalDownload(FtpConnector conn, String path, String localPath) throws FileTransferException {
+    public static Boolean optionalDownload(FtpConnector conn, String path, String localPath) {
         String locationLabel = getLocationLabel(conn, path);
         log.debug(String.format("Downloading file %s locally to %s.",
                                 path,
@@ -298,7 +299,7 @@ public class ApacheFtp {
      * @param stream An OutputStream to write to.
      * @return An Optional containing the OutputStream if the file exists; otherwise, an empty Optional.
      */
-    public static Optional<OutputStream> optionalDownload(FtpConnector conn, String path, OutputStream stream) throws FileTransferException {
+    public static Optional<OutputStream> optionalDownload(FtpConnector conn, String path, OutputStream stream) {
         log.debug(String.format("Downloading file %s to stream.", path));
 
         return retrieveFile(conn, path, stream)
@@ -312,7 +313,7 @@ public class ApacheFtp {
      * @param path      a path to a file on the host.
      * @param localPath a local path to a file to be written to.
      */
-    public static void download(FtpConnector conn, String path, String localPath) throws FileTransferException, MissingFileException {
+    public static void download(FtpConnector conn, String path, String localPath) {
         String locationLabel = getLocationLabel(conn, path);
         try (OutputStream stream = new FileOutputStream(localPath)) {
             download(conn, path, stream);
@@ -333,7 +334,7 @@ public class ApacheFtp {
      * @return An Map of paths to a Boolean indicating if the respective file was found and written to their respective
      * OutputStream.
      */
-    public static Map<String, Boolean> downloadAll(FtpConnector conn, Map<String, OutputStream> targets) throws FileTransferException {
+    public static Map<String, Boolean> downloadAll(FtpConnector conn, Map<String, OutputStream> targets) {
         Map<String, Boolean> results = new HashMap<>();
 
         for (Map.Entry<String, OutputStream> target : targets.entrySet()) {
@@ -355,8 +356,8 @@ public class ApacheFtp {
      * @param stream An OutputStream to write to.
      * @return An Optional containing the OutputStream if the file exists; otherwise, an empty Optional.
      */
-    public static OutputStream download(FtpConnector conn, String path, OutputStream stream) throws FileTransferException, MissingFileException {
-        return optionalDownload(conn, path, stream).orElseThrow(() -> fileNotFound(conn, path));
+    public static OutputStream download(FtpConnector conn, String path, OutputStream stream) {
+        return optionalDownload(conn, path, stream).orElseThrow(() -> remoteFileNotFound(conn, path));
     }
 
     /**
@@ -367,10 +368,14 @@ public class ApacheFtp {
      * @param source a path of a file
      * @return the path written to
      */
-    public static String upload(FtpConnector conn, String source, String dest) throws FileTransferException {
+    public static String upload(FtpConnector conn, String source, String dest) {
         String locationLabel = getLocationLabel(conn, dest);
         log.debug(String.format("Uploading local file %s to %s.", source, locationLabel));
 
+        if(!IO.exists(source)){
+            throw new MissingLocalFileException(String.format("Local source file %s does not exist.",
+                                                              source));
+        }
         try (InputStream is = new FileInputStream(source)) {
             return upload(conn, is, dest);
         } catch (IOException ex) {
@@ -386,7 +391,7 @@ public class ApacheFtp {
      * @param dest   a path to write to on the host
      * @return the path written to
      */
-    public static String upload(FtpConnector conn, InputStream source, String dest) throws FileTransferException {
+    public static String upload(FtpConnector conn, InputStream source, String dest) {
         try {
             FTPClient client = conn.getClient();
             String locationLabel = getLocationLabel(conn, dest);
@@ -409,7 +414,7 @@ public class ApacheFtp {
 
     private static Optional<String> retrieveFile(FtpConnector conn,
             String path,
-            OutputStream stream) throws FileTransferException {
+            OutputStream stream) {
         FTPClient client = conn.getClient();
         String locationLabel = getLocationLabel(conn, path);
         log.debug(String.format("Retrieving file %s.", locationLabel));
@@ -449,9 +454,9 @@ public class ApacheFtp {
         return new FileTransferException(path);
     }
 
-    private static MissingFileException fileNotFound(FtpConnector conn, String path) {
+    private static MissingRemoteFileException remoteFileNotFound(FtpConnector conn, String path) {
         String locationLabel = getLocationLabel(conn, path);
-        String message = String.format("File %s not found.", path);
-        return new MissingFileException(message);
+        String message = String.format("Remote file %s not found.", locationLabel);
+        return new MissingRemoteFileException(message);
     }
 }

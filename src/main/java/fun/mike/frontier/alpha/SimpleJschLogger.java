@@ -17,13 +17,13 @@ public class SimpleJschLogger implements com.jcraft.jsch.Logger {
         logMap.put(com.jcraft.jsch.Logger.DEBUG, log::debug);
         logMap.put(com.jcraft.jsch.Logger.ERROR, log::error);
         logMap.put(com.jcraft.jsch.Logger.FATAL, log::error);
-        logMap.put(com.jcraft.jsch.Logger.INFO, log::info);
+        logMap.put(com.jcraft.jsch.Logger.INFO, log::debug);
         logMap.put(com.jcraft.jsch.Logger.WARN, log::warn);
 
         enabledMap.put(com.jcraft.jsch.Logger.DEBUG, log::isDebugEnabled);
         enabledMap.put(com.jcraft.jsch.Logger.ERROR, log::isErrorEnabled);
         enabledMap.put(com.jcraft.jsch.Logger.FATAL, log::isErrorEnabled);
-        enabledMap.put(com.jcraft.jsch.Logger.INFO, log::isInfoEnabled);
+        enabledMap.put(com.jcraft.jsch.Logger.INFO, log::isDebugEnabled);
         enabledMap.put(com.jcraft.jsch.Logger.WARN, log::isWarnEnabled);
     }
 

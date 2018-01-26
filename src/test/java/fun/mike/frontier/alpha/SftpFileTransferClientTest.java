@@ -67,7 +67,7 @@ public class SftpFileTransferClientTest {
     }
 
     @Test
-    public void delete() throws FileTransferException, MissingFileException {
+    public void delete() {
         FileTransferClient client = client();
 
         final String PATH = "baz.txt";
