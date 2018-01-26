@@ -373,8 +373,8 @@ public class ApacheFtp {
         log.debug(String.format("Uploading local file %s to %s.", source, locationLabel));
 
         if(!IO.exists(source)){
-            throw new MissingLocalFileException(String.format("Local source file %s does not exist.",
-                                                              source));
+            String message = String.format("Local source file %s does not exist.", source);
+            throw new MissingLocalFileException(message);
         }
         try (InputStream is = new FileInputStream(source)) {
             return upload(conn, is, dest);

@@ -79,7 +79,7 @@ public class SftpFileTransferClient implements FileTransferClient {
         log.debug(String.format("Uploading local file %s to %s.", source, locationLabel));
 
         if(!IO.exists(source)) {
-            String message = String.format("Failed to read local source file \"%s\".", source);
+            String message = String.format("Local source file %s does not exist.", source);
             throw new MissingLocalFileException(message);
         }
 
