@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.Optional;
 
+import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,7 +52,7 @@ public abstract class FileTransferClientTest {
     @Test
     public void streamNotFound() {
         thrown.expect(MissingRemoteFileException.class);
-//        thrown.expectMessage("Remote file localhost:52996:elkawrjwa not found.");
+        thrown.expectMessage(new RegexMatcher("Remote file localhost:[0-9]+:elkawrjwa not found."));
         client().stream("elkawrjwa");
     }
 
@@ -87,7 +88,7 @@ public abstract class FileTransferClientTest {
     @Test
     public void downloadNonexistentFile()  {
         thrown.expect(MissingRemoteFileException.class);
-        thrown.expectMessage("foo");
+        thrown.expectMessage(new RegexMatcher("Remote file localhost:[0-9]+:foo not found."));
         OutputStream os = new ByteArrayOutputStream();
         client().download("foo", os);
     }
@@ -126,7 +127,7 @@ public abstract class FileTransferClientTest {
     @Test
     public void downloadToPathFileNotFoundOnHost() {
         thrown.expect(MissingRemoteFileException.class);
-//        thrown.expectMessage("Remote file localhost:52996:test/ekajrka.txt not found.");
+        thrown.expectMessage(new RegexMatcher("Remote file localhost:[0-9]+:test/ekajrka.txt not found."));
 
         final String FTP_PATH = "test/ekajrka.txt";
         final String LOCAL_FILE = "local/foo.txt";

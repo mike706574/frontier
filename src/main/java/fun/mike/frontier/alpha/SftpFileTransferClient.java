@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
@@ -15,6 +17,7 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
+import fun.mike.frontier.impl.alpha.JschSftp;
 import fun.mike.frontier.impl.alpha.SftpConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,33 +135,7 @@ public class SftpFileTransferClient implements FileTransferClient {
 
     @Override
     public Boolean fileExists(String path) {
-        String locationLabel = getLocationLabel(path);
-        log.debug(String.format("Checking if directory %s exists.",
-                                locationLabel));
-
-        SftpConnector con = connect();
-        ChannelSftp chan = con.getChannel();
-
-        try {
-            SftpATTRS attrs = chan.lstat(path);
-
-            if (attrs.isDir()) {
-                String message = String.format("%s exists, but is a directory.",
-                                               locationLabel);
-                throw new FileTransferException(message);
-            }
-
-            return true;
-        } catch (SftpException e) {
-            if (e.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
-                return false;
-            } else {
-                String message = String.format("Error asserting if file %s exists.", locationLabel);
-                throw new FileTransferException(message);
-            }
-        } finally {
-            disconnect(con);
-        }
+        return withConnector(conn -> JschSftp.fileExists(conn, path));
     }
 
     @Override
@@ -290,7 +267,7 @@ public class SftpFileTransferClient implements FileTransferClient {
             session.connect();
             ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
             channelSftp.connect();
-            return new SftpConnector(session, channelSftp);
+            return new SftpConnector(session, channelSftp, host, port);
         } catch (JSchException e) {
             String message = "Jsch failed to set up connection.";
             log.warn(message);
@@ -299,8 +276,10 @@ public class SftpFileTransferClient implements FileTransferClient {
     }
 
     private void disconnect(SftpConnector conn) {
-        conn.getSession().disconnect();
-        conn.getChannel().disconnect();
+        if(conn != null) {
+            conn.getSession().disconnect();
+            conn.getChannel().disconnect();
+        }
     }
 
     private String getLocationLabel(String path) {
@@ -318,5 +297,25 @@ public class SftpFileTransferClient implements FileTransferClient {
         String locationLabel = getLocationLabel(path);
         String message = String.format("File %s not found.", path);
         return new MissingRemoteFileException(message);
+    }
+
+    private <T> T withConnector(Function<SftpConnector, T> function) {
+        SftpConnector conn = null;
+        try {
+            conn = connect();
+            return function.apply(conn);
+        } finally {
+            disconnect(conn);
+        }
+    }
+
+    private void useConnector(Consumer<SftpConnector> consumer) {
+        SftpConnector conn = null;
+        try {
+            conn = connect();
+            consumer.accept(conn);
+        } finally {
+            disconnect(conn);
+        }
     }
 }
