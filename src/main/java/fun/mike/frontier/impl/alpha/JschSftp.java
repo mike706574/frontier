@@ -13,7 +13,7 @@ public class JschSftp {
 
     public static Boolean fileExists(SftpConnector conn, String path) {
         String locationLabel = getLocationLabel(conn, path);
-        log.debug(String.format("Checking if directory %s exists.",
+        log.debug(String.format("Checking if file %s exists.",
                                 locationLabel));
 
         try {
