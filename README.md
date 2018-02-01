@@ -1,6 +1,6 @@
 # frontier
 
-FTP library. Wraps commons-net and JSch.
+FTP library. Wraps `commons-net` and `JSch`.
 
 ## Copyright and License
 
