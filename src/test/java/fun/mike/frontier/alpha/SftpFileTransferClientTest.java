@@ -1,9 +1,12 @@
 package fun.mike.frontier.alpha;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.github.stefanbirkner.fakesftpserver.rule.FakeSftpServerRule;
 import org.junit.Rule;
@@ -83,7 +86,32 @@ public class SftpFileTransferClientTest {
 
         assertFalse(client.fileExists(PATH));
     }
+    
+    @Test
+    public void list(){
+        FileTransferClient client = client();
+        final String CONTENT = "baz.";
 
+        InputStream in = new ByteArrayInputStream(CONTENT.getBytes());
+        
+        client.upload(in, "/baz.txt");
+        client.upload(in, "/foo.txt");
+        client.upload(in, "/bar.txt");
+        client.upload(in, "/qux.txt");
+        
+        List<FileInfo> results = client.list("/");
+        
+        List<String> fileNames = results.stream().map(result -> {
+            return result.getName();
+        }).collect(Collectors.toList());
+        
+        assertEquals(4, results.size() - 2); //taking into account "." and "home" directories that are always at the root
+        assertTrue(fileNames.contains("baz.txt"));
+        assertTrue(fileNames.contains("foo.txt"));
+        assertTrue(fileNames.contains("bar.txt"));
+        assertTrue(fileNames.contains("qux.txt"));
+    }
+    
     private String getFileContent(String path) {
         try {
             return server.getFileContent(path, UTF_8);
