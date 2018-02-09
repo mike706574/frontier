@@ -1,17 +1,7 @@
 package fun.mike.frontier.alpha;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.function.Consumer;
-import java.util.function.Function;
-
 import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.ChannelSftp.LsEntry;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
@@ -21,6 +11,21 @@ import fun.mike.frontier.impl.alpha.JschSftp;
 import fun.mike.frontier.impl.alpha.SftpConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Vector;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 
@@ -113,7 +118,6 @@ public class SftpFileTransferClient implements FileTransferClient {
 
         try {
             SftpATTRS attrs = chan.lstat(path);
-
             if (attrs.isDir()) {
                 return true;
             }
@@ -147,7 +151,6 @@ public class SftpFileTransferClient implements FileTransferClient {
     public String slurp(String path) {
         SftpConnector con = connect();
         ChannelSftp chan = con.getChannel();
-
         try {
             return IO.slurp(chan.get(path));
         } catch (SftpException e) {
@@ -161,7 +164,27 @@ public class SftpFileTransferClient implements FileTransferClient {
 
     @Override
     public List<FileInfo> list(String path) {
-        throw new UnsupportedOperationException("Not yet implemented.");
+        SftpConnector conn = connect();
+        ChannelSftp chan = conn.getChannel();
+
+        try {
+            Vector<LsEntry> resultVector = chan.ls(path);
+            return resultVector.stream()
+                    .map(entry -> {
+                        Date fileDate = new Date(entry.getAttrs().getATime() * 1000L);
+                        return new FileInfo(entry.getFilename(),
+                                entry.getAttrs().getSize(),
+                                fileDate,
+                                entry.getAttrs().isDir());
+                    })
+                    .collect(Collectors.toList());
+        } catch (SftpException e) {
+            String message = String.format("Failed to list files at \"%s\".", path);
+            log.warn(message);
+            throw new FileTransferException(message, e);
+        } finally {
+            disconnect(conn);
+        }
     }
 
     @Override
