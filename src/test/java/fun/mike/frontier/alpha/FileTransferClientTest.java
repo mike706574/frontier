@@ -7,8 +7,8 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.Optional;
 
-import org.hamcrest.Matcher;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -27,8 +27,14 @@ public abstract class FileTransferClientTest {
 
     public abstract FileTransferClient client();
 
+    @Before
+    public void superSetUp() {
+        IO.mkdir("local");
+    }
+
     @After
     public void superTearDown() {
+        IO.nuke("local");
         IO.deleteQuietly(LOCAL_FILE);
     }
 
@@ -86,7 +92,7 @@ public abstract class FileTransferClientTest {
     }
 
     @Test
-    public void downloadNonexistentFile()  {
+    public void downloadNonexistentFile() {
         thrown.expect(MissingRemoteFileException.class);
         thrown.expectMessage(new RegexMatcher("Remote file localhost:[0-9]+:foo not found."));
         OutputStream os = new ByteArrayOutputStream();

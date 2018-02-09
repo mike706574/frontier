@@ -372,7 +372,7 @@ public class ApacheFtp {
         String locationLabel = getLocationLabel(conn, dest);
         log.debug(String.format("Uploading local file %s to %s.", source, locationLabel));
 
-        if(!IO.exists(source)){
+        if (!IO.exists(source)) {
             String message = String.format("Local source file %s does not exist.", source);
             throw new MissingLocalFileException(message);
         }

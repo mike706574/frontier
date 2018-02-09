@@ -1,6 +1,6 @@
 package fun.mike.frontier.alpha;
 
-public class MissingLocalFileException extends RuntimeException{
+public class MissingLocalFileException extends RuntimeException {
     public MissingLocalFileException(String msg) {
         super(msg);
     }

@@ -11,6 +11,10 @@ public class RegexMatcher extends TypeSafeMatcher<String> {
         this.regex = regex;
     }
 
+    public static RegexMatcher matchesRegex(final String regex) {
+        return new RegexMatcher(regex);
+    }
+
     @Override
     public void describeTo(final Description description) {
         description.appendText("matches regex=`" + regex + "`");
@@ -19,10 +23,5 @@ public class RegexMatcher extends TypeSafeMatcher<String> {
     @Override
     public boolean matchesSafely(final String string) {
         return string.matches(regex);
-    }
-
-
-    public static RegexMatcher matchesRegex(final String regex) {
-        return new RegexMatcher(regex);
     }
 }
