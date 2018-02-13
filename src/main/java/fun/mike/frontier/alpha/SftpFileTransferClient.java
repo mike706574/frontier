@@ -1,5 +1,17 @@
 package fun.mike.frontier.alpha;
 
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.ChannelSftp.LsEntry;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpATTRS;
+import com.jcraft.jsch.SftpException;
+import fun.mike.frontier.impl.alpha.JschSftp;
+import fun.mike.frontier.impl.alpha.SftpConnector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,18 +26,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.ChannelSftp.LsEntry;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-import com.jcraft.jsch.SftpATTRS;
-import com.jcraft.jsch.SftpException;
-import fun.mike.frontier.impl.alpha.JschSftp;
-import fun.mike.frontier.impl.alpha.SftpConnector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static java.util.Objects.isNull;
 
 public class SftpFileTransferClient implements FileTransferClient {
@@ -37,7 +37,9 @@ public class SftpFileTransferClient implements FileTransferClient {
     private final String password;
     private final String privateKeyPath;
     private final String publicKeyPath;
+    private final String knownHostsPath;
     private final byte[] passphrase;
+    private final boolean strictHostChecking;
 
     public SftpFileTransferClient(String host,
             Integer port,
@@ -45,6 +47,7 @@ public class SftpFileTransferClient implements FileTransferClient {
             String password,
             String privateKeyPath,
             String publicKeyPath,
+            String knownHostsPath,
             byte[] passphrase) {
         this.host = host;
         this.port = port;
@@ -52,7 +55,29 @@ public class SftpFileTransferClient implements FileTransferClient {
         this.password = password;
         this.privateKeyPath = privateKeyPath;
         this.publicKeyPath = publicKeyPath;
+        this.knownHostsPath = knownHostsPath;
         this.passphrase = passphrase;
+        this.strictHostChecking = true;
+    }
+
+    public SftpFileTransferClient(String host,
+                                  Integer port,
+                                  String username,
+                                  String password,
+                                  String privateKeyPath,
+                                  String publicKeyPath,
+                                  String knownHostsPath,
+                                  byte[] passphrase,
+                                  boolean strictHostChecking) {
+        this.host = host;
+        this.port = port;
+        this.username = username;
+        this.password = password;
+        this.privateKeyPath = privateKeyPath;
+        this.publicKeyPath = publicKeyPath;
+        this.knownHostsPath = knownHostsPath;
+        this.passphrase = passphrase;
+        this.strictHostChecking = strictHostChecking;
     }
 
     public static SftpFileTransferClient withKeys(String host,
@@ -60,8 +85,9 @@ public class SftpFileTransferClient implements FileTransferClient {
             String username,
             String privateKeyPath,
             String publicKeyPath,
+            String knownHostsPath, 
             byte[] passphrase) {
-        return new SftpFileTransferClient(host, port, username, null, privateKeyPath, publicKeyPath, null);
+        return new SftpFileTransferClient(host, port, username, null, privateKeyPath, publicKeyPath, knownHostsPath, null);
     }
 
     public static SftpFileTransferClient withPassphrase(String host,
@@ -69,12 +95,17 @@ public class SftpFileTransferClient implements FileTransferClient {
             String username,
             String privateKeyPath,
             String publicKeyPath,
+            String knownHostsPath,
             byte[] passphrase) {
-        return new SftpFileTransferClient(host, port, username, null, privateKeyPath, publicKeyPath, passphrase);
+        return new SftpFileTransferClient(host, port, username, null, privateKeyPath, publicKeyPath, knownHostsPath, passphrase);
     }
 
     public static SftpFileTransferClient withPassword(String host, Integer port, String username, String password) {
-        return new SftpFileTransferClient(host, port, username, password, null, null, null);
+        return new SftpFileTransferClient(host, port, username, password, null, null, null, null);
+    }
+
+    public static SftpFileTransferClient withPassword(String host, Integer port, String username, String password, boolean strictHostChecking) {
+        return new SftpFileTransferClient(host, port, username, password, null, null, null,null, strictHostChecking);
     }
 
     @Override
@@ -258,7 +289,7 @@ public class SftpFileTransferClient implements FileTransferClient {
             disconnect(conn);
         }
     }
-
+    
     private SftpConnector connect() {
         try {
             JSch.setLogger(new SimpleJschLogger());
@@ -284,7 +315,18 @@ public class SftpFileTransferClient implements FileTransferClient {
             }
 
             Properties config = new Properties();
-            config.put("StrictHostKeyChecking", "no");
+            if(!strictHostChecking) {
+                log.warn("Strict host key checking is set to \"false\".");
+                config.put("StrictHostKeyChecking", "no");
+            }
+
+            if (this.knownHostsPath != null) {
+                log.debug("Using known hosts path.");
+                jsch.setKnownHosts(knownHostsPath);
+            }else {
+                log.warn("No known hosts file path provided.");
+            }
+            
             session.setConfig(config);
             session.connect();
             ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
