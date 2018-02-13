@@ -28,7 +28,8 @@ public class SftpFileTransferClientTest {
         return SftpFileTransferClient.withPassword("localhost",
                                                    PORT,
                                                    "foo",
-                                                   "baz");
+                                                   "baz",
+                                                    false);
     }
 
     @Before
@@ -112,9 +113,8 @@ public class SftpFileTransferClientTest {
 
         List<FileInfo> results = client.list("/");
 
-        List<String> fileNames = results.stream().map(result -> {
-            return result.getName();
-        }).collect(Collectors.toList());
+        List<String> fileNames = results.stream().map(result -> result.getName())
+                .collect(Collectors.toList());
 
         assertEquals(4, results.size() - 2); //taking into account "." and "home" directories that are always at the root
         assertTrue(fileNames.contains("baz.txt"));
