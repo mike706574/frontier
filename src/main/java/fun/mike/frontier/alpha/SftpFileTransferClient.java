@@ -341,8 +341,8 @@ public class SftpFileTransferClient implements FileTransferClient {
 
     private void disconnect(SftpConnector conn) {
         if (conn != null) {
-            conn.getSession().disconnect();
             conn.getChannel().disconnect();
+            conn.getSession().disconnect();
         }
     }
 
