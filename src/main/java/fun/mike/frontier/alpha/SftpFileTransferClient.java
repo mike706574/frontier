@@ -85,7 +85,7 @@ public class SftpFileTransferClient implements FileTransferClient {
             String username,
             String privateKeyPath,
             String publicKeyPath,
-            String knownHostsPath, 
+            String knownHostsPath,
             byte[] passphrase) {
         return new SftpFileTransferClient(host, port, username, null, privateKeyPath, publicKeyPath, knownHostsPath, null);
     }
@@ -224,7 +224,21 @@ public class SftpFileTransferClient implements FileTransferClient {
 
     @Override
     public Optional<OutputStream> optionalDownload(String path, OutputStream stream) throws FileTransferException {
-        throw new UnsupportedOperationException("Not yet implemented.");
+        return withConnector(conn -> {
+                try {
+                    conn.getChannel().get(path, stream);
+                    return Optional.of(stream);
+                }
+                catch (SftpException e) {
+                    if(e.id == 2) {
+                        return Optional.empty();
+                    }
+
+                    String message = String.format("Failed to retrieve file at path \"%s\".", path);
+                    log.warn(message);
+                    throw new FileTransferException(message, e);
+                }
+            });
     }
 
     public void download(String path, String localPath) throws FileTransferException {
@@ -244,7 +258,17 @@ public class SftpFileTransferClient implements FileTransferClient {
 
     @Override
     public OutputStream download(String path, OutputStream stream) {
-        throw new UnsupportedOperationException("Not yet implemented.");
+        useConnector(conn -> {
+                try {
+                    conn.getChannel().get(path, stream);
+                }
+                catch (SftpException e) {
+                    String message = String.format("Failed to retrieve file at path \"%s\".", path);
+                    log.warn(message);
+                    throw new FileTransferException(message, e);
+                }
+            });
+        return stream;
     }
 
     @Override
@@ -289,7 +313,7 @@ public class SftpFileTransferClient implements FileTransferClient {
             disconnect(conn);
         }
     }
-    
+
     private SftpConnector connect() {
         try {
             JSch.setLogger(new SimpleJschLogger());
@@ -326,7 +350,7 @@ public class SftpFileTransferClient implements FileTransferClient {
             }else {
                 log.warn("No known hosts file path provided.");
             }
-            
+
             session.setConfig(config);
             session.connect();
             ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");

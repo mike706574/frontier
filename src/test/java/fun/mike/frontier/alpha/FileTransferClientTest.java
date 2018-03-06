@@ -80,8 +80,16 @@ public abstract class FileTransferClientTest {
     @Test
     public void download() {
         OutputStream out = new ByteArrayOutputStream();
-        client().optionalDownload("test/foo.txt",
-                                  out);
+        client().download("test/foo.txt", out);
+        assertEquals("foo.", out.toString());
+    }
+
+    @Test
+    public void optionalDownload() {
+        OutputStream out = new ByteArrayOutputStream();
+        assertEquals(Optional.of(out),
+                     client().optionalDownload("test/foo.txt",
+                                               out));
         assertEquals("foo.", out.toString());
     }
 

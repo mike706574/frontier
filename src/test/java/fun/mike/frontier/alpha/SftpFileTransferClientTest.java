@@ -1,10 +1,13 @@
 package fun.mike.frontier.alpha;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.github.stefanbirkner.fakesftpserver.rule.FakeSftpServerRule;
@@ -21,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 public class SftpFileTransferClientTest {
     private final String LOCAL_FILE = "local/foo.txt";
     private int PORT = 8080;
+
     @Rule
     public final FakeSftpServerRule server = new FakeSftpServerRule().setPort(PORT);
 
@@ -121,6 +125,34 @@ public class SftpFileTransferClientTest {
         assertTrue(fileNames.contains("foo.txt"));
         assertTrue(fileNames.contains("bar.txt"));
         assertTrue(fileNames.contains("qux.txt"));
+    }
+
+    @Test
+    public void download() throws IOException {
+        String content = "foo.";
+        server.putFile("/test/foo.txt", content, UTF_8);
+
+        OutputStream out = new ByteArrayOutputStream();
+        client().download("test/foo.txt", out);
+        assertEquals("foo.", out.toString());
+    }
+
+    @Test
+    public void optionalDownload() throws IOException {
+        String content = "foo.";
+        server.putFile("/test/foo.txt", content, UTF_8);
+
+        OutputStream out = new ByteArrayOutputStream();
+        assertEquals(Optional.of(out),
+                     client().optionalDownload("test/foo.txt",
+                                               out));
+        assertEquals("foo.", out.toString());
+    }
+
+    @Test
+    public void downloadOptionalNonexistentFile() {
+        OutputStream os = new ByteArrayOutputStream();
+        assertEquals(Optional.empty(), client().optionalDownload("foo", os));
     }
 
     private String getFileContent(String path) {
