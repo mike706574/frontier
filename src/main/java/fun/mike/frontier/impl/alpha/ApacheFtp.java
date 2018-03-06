@@ -87,10 +87,15 @@ public class ApacheFtp {
 
             boolean found = false;
             int replyCode = client.getReplyCode();
+
             if (replyCode == 250) {
                 log.debug(String.format("Found directory %s.", locationLabel));
                 found = true;
-            } else if (replyCode == 550) {
+            } else if(replyCode == 257) {
+                log.debug(String.format("Directory %s is current directory.", locationLabel));
+                return true;
+            }
+            else if (replyCode == 550) {
                 log.debug(String.format("Failed to find directory %s.",
                                         locationLabel));
                 found = false;
