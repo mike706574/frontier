@@ -5,8 +5,6 @@
 
 File transfer library for Java. Wraps `commons-net` for FTP and `JSch` for SFTP.
 
-[API Docs](http://javadoc.io/doc/fun.mike/frontier-alpha)
-
 ## Build
 
 [![CircleCI](https://circleci.com/gh/mike706574/frontier.svg?style=svg)](https://circleci.com/gh/mike706574/frontier)
