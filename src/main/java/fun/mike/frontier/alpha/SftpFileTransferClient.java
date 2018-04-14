@@ -347,7 +347,7 @@ public class SftpFileTransferClient implements FileTransferClient {
             if (this.knownHostsPath != null) {
                 log.trace("Known hosts path: " + knownHostsPath);
                 jsch.setKnownHosts(knownHostsPath);
-            }else {
+            } else {
                 log.warn("No known hosts file path provided.");
             }
 
