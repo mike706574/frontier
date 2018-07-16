@@ -88,23 +88,25 @@ public class ApacheFtp {
             boolean found = false;
             int replyCode = client.getReplyCode();
 
-            if (replyCode == 250) {
-                log.debug(String.format("Found directory %s.", locationLabel));
-                found = true;
-            } else if(replyCode == 257) {
-                log.debug(String.format("Directory %s is current directory.", locationLabel));
-                return true;
-            }
-            else if (replyCode == 550) {
-                log.debug(String.format("Failed to find directory %s.",
-                                        locationLabel));
-                found = false;
-            } else {
-                String message = String.format("Unexpected reply from changing working directory while checking for existence of %s: %s",
-                                               locationLabel,
-                                               client.getReplyString());
-                log.warn(message);
-                throw new FileTransferException(message);
+            switch (replyCode) {
+                case 250:
+                    log.debug(String.format("Found directory %s.", locationLabel));
+                    found = true;
+                    break;
+                case 257:
+                    log.debug(String.format("Directory %s is current directory.", locationLabel));
+                    return true;
+                case 550:
+                    log.debug(String.format("Failed to find directory %s.",
+                                            locationLabel));
+                    found = false;
+                    break;
+                default:
+                    String message = String.format("Unexpected reply from changing working directory while checking for existence of %s: %s",
+                                                   locationLabel,
+                                                   client.getReplyString());
+                    log.warn(message);
+                    throw new FileTransferException(message);
             }
 
             client.changeWorkingDirectory(workingDir);
@@ -188,6 +190,7 @@ public class ApacheFtp {
 
             if (files.size() > 1) {
                 String message = String.format("%d files found when checking if %s exists.",
+                                               files.size(),
                                                path);
                 throw new FileTransferException(message);
             }
@@ -267,7 +270,7 @@ public class ApacheFtp {
             log.debug(String.format("Found %d files.", files.size()));
             return files;
         } catch (IOException ex) {
-            String message = String.format("I/O error listing directory.");
+            String message = "I/O error listing directory.";
             log.warn(message);
             throw new FileTransferException(message, ex);
         }

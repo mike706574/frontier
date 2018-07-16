@@ -87,7 +87,18 @@ public class SftpFileTransferClient implements FileTransferClient {
             String publicKeyPath,
             String knownHostsPath,
             byte[] passphrase) {
-        return new SftpFileTransferClient(host, port, username, null, privateKeyPath, publicKeyPath, knownHostsPath, null);
+        return new SftpFileTransferClient(host, port, username, null, privateKeyPath, publicKeyPath, knownHostsPath, passphrase);
+    }
+
+    public static SftpFileTransferClient withKeys(String host,
+            Integer port,
+            String username,
+            String privateKeyPath,
+            String publicKeyPath,
+            String knownHostsPath,
+            byte[] passphrase,
+            boolean strictHostChecking) {
+        return new SftpFileTransferClient(host, port, username, null, privateKeyPath, publicKeyPath, knownHostsPath, passphrase, strictHostChecking);
     }
 
     public static SftpFileTransferClient withPassphrase(String host,
@@ -198,7 +209,7 @@ public class SftpFileTransferClient implements FileTransferClient {
         ChannelSftp chan = conn.getChannel();
 
         try {
-            Vector<LsEntry> resultVector = chan.ls(path);
+            Vector<LsEntry> resultVector = (Vector<LsEntry>) chan.ls(path);
             return resultVector.stream()
                     .map(entry -> {
                         Date fileDate = new Date(entry.getAttrs().getATime() * 1000L);
@@ -382,7 +393,6 @@ public class SftpFileTransferClient implements FileTransferClient {
     }
 
     private MissingRemoteFileException remoteFileNotFound(String path) {
-        String locationLabel = getLocationLabel(path);
         String message = String.format("File %s not found.", path);
         return new MissingRemoteFileException(message);
     }

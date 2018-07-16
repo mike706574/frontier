@@ -108,7 +108,7 @@ public class IO {
         try (FileOutputStream fos = new FileOutputStream(zipPath);
              ZipOutputStream zos = new ZipOutputStream(fos)) {
             for (Map.Entry<String, InputStream> entry : entries.entrySet()) {
-                String path = (String) entry.getKey();
+                String path = entry.getKey();
                 try (InputStream is = entry.getValue()) {
                     zos.putNextEntry(new ZipEntry(new File(path).getName()));
                     pipe(is, zos);

@@ -117,7 +117,7 @@ public class SftpFileTransferClientTest {
 
         List<FileInfo> results = client.list("/");
 
-        List<String> fileNames = results.stream().map(result -> result.getName())
+        List<String> fileNames = results.stream().map(FileInfo::getName)
                 .collect(Collectors.toList());
 
         assertEquals(4, results.size() - 2); //taking into account "." and "home" directories that are always at the root
