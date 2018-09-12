@@ -29,6 +29,10 @@ import java.util.stream.Collectors;
 import static java.util.Objects.isNull;
 
 public class SftpFileTransferClient implements FileTransferClient {
+    private static final int DEFAULT_CONNECT_TIMEOUT = 30000;
+    private static final int DEFAULT_SERVER_KEEP_ALIVE_COUNT_MAX = 6;
+    private static final int DEFAULT_SERVER_KEEP_ALIVE_INTERVAL = 10000;
+
     private static final Logger log = LoggerFactory.getLogger(FtpFileTransferClient.class);
 
     private final String host;
@@ -40,6 +44,9 @@ public class SftpFileTransferClient implements FileTransferClient {
     private final String knownHostsPath;
     private final byte[] passphrase;
     private final boolean strictHostChecking;
+    private final int connectTimeout;
+    private final int serverKeepAliveCountMax;
+    private final int serverKeepAliveInterval;
 
     public SftpFileTransferClient(String host,
             Integer port,
@@ -49,15 +56,8 @@ public class SftpFileTransferClient implements FileTransferClient {
             String publicKeyPath,
             String knownHostsPath,
             byte[] passphrase) {
-        this.host = host;
-        this.port = port;
-        this.username = username;
-        this.password = password;
-        this.privateKeyPath = privateKeyPath;
-        this.publicKeyPath = publicKeyPath;
-        this.knownHostsPath = knownHostsPath;
-        this.passphrase = passphrase;
-        this.strictHostChecking = true;
+        this(host, port, username, password, privateKeyPath, publicKeyPath,
+             knownHostsPath, passphrase, true);
     }
 
     public SftpFileTransferClient(String host,
@@ -69,6 +69,23 @@ public class SftpFileTransferClient implements FileTransferClient {
                                   String knownHostsPath,
                                   byte[] passphrase,
                                   boolean strictHostChecking) {
+        this(host, port, username, password, privateKeyPath, publicKeyPath,
+             knownHostsPath, passphrase, strictHostChecking, DEFAULT_CONNECT_TIMEOUT,
+             DEFAULT_SERVER_KEEP_ALIVE_COUNT_MAX, DEFAULT_SERVER_KEEP_ALIVE_INTERVAL);
+    }
+
+    public SftpFileTransferClient(String host,
+                                  Integer port,
+                                  String username,
+                                  String password,
+                                  String privateKeyPath,
+                                  String publicKeyPath,
+                                  String knownHostsPath,
+                                  byte[] passphrase,
+                                  boolean strictHostChecking,
+                                  int connectTimeout,
+                                  int serverKeepAliveCountMax,
+                                  int serverKeepAliveInterval) {
         this.host = host;
         this.port = port;
         this.username = username;
@@ -78,6 +95,9 @@ public class SftpFileTransferClient implements FileTransferClient {
         this.knownHostsPath = knownHostsPath;
         this.passphrase = passphrase;
         this.strictHostChecking = strictHostChecking;
+        this.connectTimeout = connectTimeout;
+        this.serverKeepAliveCountMax = serverKeepAliveCountMax;
+        this.serverKeepAliveInterval = serverKeepAliveInterval;
     }
 
     public static SftpFileTransferClient withKeys(String host,
@@ -101,6 +121,20 @@ public class SftpFileTransferClient implements FileTransferClient {
         return new SftpFileTransferClient(host, port, username, null, privateKeyPath, publicKeyPath, knownHostsPath, passphrase, strictHostChecking);
     }
 
+    public static SftpFileTransferClient withKeys(String host,
+                                                  Integer port,
+                                                  String username,
+                                                  String privateKeyPath,
+                                                  String publicKeyPath,
+                                                  String knownHostsPath,
+                                                  byte[] passphrase,
+                                                  boolean strictHostChecking,
+                                                  int connectTimeout,
+                                                  int serverKeepAliveCountMax,
+                                                  int serverKeepAliveInterval) {
+        return new SftpFileTransferClient(host, port, username, null, privateKeyPath, publicKeyPath, knownHostsPath, passphrase, strictHostChecking, connectTimeout, serverKeepAliveCountMax, serverKeepAliveInterval);
+    }
+
     public static SftpFileTransferClient withPassphrase(String host,
             Integer port,
             String username,
@@ -111,12 +145,37 @@ public class SftpFileTransferClient implements FileTransferClient {
         return new SftpFileTransferClient(host, port, username, null, privateKeyPath, publicKeyPath, knownHostsPath, passphrase);
     }
 
+    public static SftpFileTransferClient withPassphrase(String host,
+                                                        Integer port,
+                                                        String username,
+                                                        String privateKeyPath,
+                                                        String publicKeyPath,
+                                                        String knownHostsPath,
+                                                        byte[] passphrase,
+                                                        boolean strictHostChecking,
+                                                        int connectTimeout,
+                                                        int serverKeepAliveCountMax,
+                                                        int serverKeepAliveInterval) {
+        return new SftpFileTransferClient(host, port, username, null, privateKeyPath, publicKeyPath, knownHostsPath, passphrase, strictHostChecking, connectTimeout, serverKeepAliveCountMax, serverKeepAliveInterval);
+    }
+
     public static SftpFileTransferClient withPassword(String host, Integer port, String username, String password) {
         return new SftpFileTransferClient(host, port, username, password, null, null, null, null);
     }
 
     public static SftpFileTransferClient withPassword(String host, Integer port, String username, String password, boolean strictHostChecking) {
-        return new SftpFileTransferClient(host, port, username, password, null, null, null,null, strictHostChecking);
+        return new SftpFileTransferClient(host, port, username, password, null, null, null, null, strictHostChecking);
+    }
+
+    public static SftpFileTransferClient withPassword(String host,
+                                                      Integer port,
+                                                      String username,
+                                                      String password,
+                                                      boolean strictHostChecking,
+                                                      int connectTimeout,
+                                                      int serverKeepAliveCountMax,
+                                                      int serverKeepAliveInterval) {
+        return new SftpFileTransferClient(host, port, username, password, null, null, null, null, strictHostChecking, connectTimeout, serverKeepAliveCountMax, serverKeepAliveInterval);
     }
 
     @Override
@@ -344,6 +403,10 @@ public class SftpFileTransferClient implements FileTransferClient {
             }
 
             Session session = jsch.getSession(this.username, this.host, this.port);
+
+            session.setServerAliveCountMax(serverKeepAliveCountMax);
+            session.setServerAliveInterval(serverKeepAliveInterval);
+
             if (this.password != null) {
                 log.trace("Using password.");
                 session.setPassword(this.password);
@@ -363,13 +426,14 @@ public class SftpFileTransferClient implements FileTransferClient {
             }
 
             session.setConfig(config);
-            session.connect();
+            session.connect(connectTimeout);
             ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
             channelSftp.connect();
             return new SftpConnector(session, channelSftp, host, port);
         } catch (JSchException e) {
             String message = "Jsch failed to set up connection.";
             log.warn(message);
+            e.printStackTrace();
             throw new FileTransferException(message, e);
         }
     }
